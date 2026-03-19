@@ -1,0 +1,1125 @@
+<script setup>
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
+
+// ── 목 데이터 ──────────────────────────────────────────────
+const currentUserId = 1 // 로그인한 사용자 ID (mock)
+
+const post = ref({
+  id: Number(route.params.id) || 1,
+  authorId: 1,
+  nickname: '러너_닉네임',
+  profileImage: null,
+  createdAt: '2026.04.10 06:30',
+  photo: null, // 러닝 트래커 사진 URL
+  distance: 5.2,
+  duration: 32,
+  pace: "6'09\"",
+  memo: '오늘도 완주! 날씨가 좋아서 기분 좋았다 😊',
+  likeCount: 24,
+  liked: false,
+  isPublic: true,
+})
+
+const comments = ref([
+  {
+    id: 1,
+    authorId: 2,
+    nickname: '댓글러A',
+    profileImage: null,
+    content: '대단해요! 저도 곧 도전해볼게요 👍',
+    createdAt: '2026.04.10 07:10',
+    replies: [
+      {
+        id: 11,
+        authorId: 1,
+        nickname: '러너_닉네임',
+        profileImage: null,
+        content: '감사해요~ 같이 달려요 🏃',
+        createdAt: '2026.04.10 07:15',
+      },
+    ],
+    showReplies: true,
+    replyInput: '',
+    showReplyInput: false,
+  },
+  {
+    id: 2,
+    authorId: 3,
+    nickname: '달리기왕',
+    profileImage: null,
+    content: '페이스 정말 빠르네요! 멋져요 💪',
+    createdAt: '2026.04.10 08:00',
+    replies: [],
+    showReplies: false,
+    replyInput: '',
+    showReplyInput: false,
+  },
+])
+
+const totalCommentCount = computed(() =>
+  comments.value.reduce((sum, c) => sum + 1 + c.replies.length, 0)
+)
+
+const isOwner = computed(() => post.value.authorId === currentUserId)
+
+// ── 좋아요 ────────────────────────────────────────────────
+function toggleLike() {
+  if (post.value.liked) {
+    post.value.likeCount--
+    post.value.liked = false
+  } else {
+    post.value.likeCount++
+    post.value.liked = true
+  }
+}
+
+// ── 수정 / 삭제 ───────────────────────────────────────────
+function handleEdit() {
+  router.push(`/running/edit/${post.value.id}`)
+}
+
+const showDeleteConfirm = ref(false)
+
+function handleDelete() {
+  showDeleteConfirm.value = true
+}
+
+function confirmDelete() {
+  // TODO: API 연동
+  showDeleteConfirm.value = false
+  router.push('/feed')
+}
+
+// ── 댓글 ──────────────────────────────────────────────────
+const newComment = ref('')
+const commentInputRef = ref(null)
+
+function submitComment() {
+  const text = newComment.value.trim()
+  if (!text || text.length > 250) return
+  comments.value.push({
+    id: Date.now(),
+    authorId: currentUserId,
+    nickname: '러너_닉네임',
+    profileImage: null,
+    content: text,
+    createdAt: '방금',
+    replies: [],
+    showReplies: false,
+    replyInput: '',
+    showReplyInput: false,
+  })
+  newComment.value = ''
+}
+
+function deleteComment(commentId) {
+  const idx = comments.value.findIndex((c) => c.id === commentId)
+  if (idx !== -1) comments.value.splice(idx, 1)
+}
+
+function deleteReply(commentId, replyId) {
+  const comment = comments.value.find((c) => c.id === commentId)
+  if (!comment) return
+  const idx = comment.replies.findIndex((r) => r.id === replyId)
+  if (idx !== -1) comment.replies.splice(idx, 1)
+}
+
+function toggleReplyInput(comment) {
+  comment.showReplyInput = !comment.showReplyInput
+}
+
+function submitReply(comment) {
+  const text = comment.replyInput.trim()
+  if (!text || text.length > 250) return
+  comment.replies.push({
+    id: Date.now(),
+    authorId: currentUserId,
+    nickname: '러너_닉네임',
+    profileImage: null,
+    content: text,
+    createdAt: '방금',
+  })
+  comment.replyInput = ''
+  comment.showReplyInput = false
+  comment.showReplies = true
+}
+
+// ── 신고 ──────────────────────────────────────────────────
+const showReportModal = ref(false)
+const reportTarget = ref(null) // { type: 'post' | 'comment' | 'reply', id }
+const reportReason = ref('')
+const reportEtc = ref('')
+
+function openReport(type, id) {
+  reportTarget.value = { type, id }
+  reportReason.value = ''
+  reportEtc.value = ''
+  showReportModal.value = true
+}
+
+function submitReport() {
+  if (!reportReason.value) return
+  // TODO: API 연동
+  showReportModal.value = false
+}
+</script>
+
+<template>
+  <div class="page-wrap">
+    <!-- ── 네비게이션 바 ── -->
+    <header class="navbar">
+      <button class="nav-logo" @click="router.push('/feed')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0"/>
+          <path d="M7.5 15.5 9 11l3 2 2-5"/>
+          <path d="M4 19l3.5-3.5"/>
+        </svg>
+        <span class="nav-brand">Frun</span>
+      </button>
+      <div class="nav-actions">
+        <button class="nav-btn" @click="router.push('/friends')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          즐겨찾는 친구
+        </button>
+        <button class="nav-btn nav-my" @click="router.push('/mypage')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          MY
+        </button>
+      </div>
+    </header>
+
+    <!-- ── 제목 ── -->
+    <div class="page-title-bar">
+      <button class="back-btn" @click="router.back()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <h1 class="page-title">러닝일지 상세</h1>
+    </div>
+
+    <!-- ── 본문 ── -->
+    <main class="content-grid">
+
+      <!-- 왼쪽: 일지 본문 -->
+      <section class="post-section">
+
+        <!-- 작성자 정보 + 수정/삭제 -->
+        <div class="post-header">
+          <div class="author-info">
+            <div class="avatar">
+              <img v-if="post.profileImage" :src="post.profileImage" :alt="post.nickname" />
+              <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div>
+              <p class="author-name">{{ post.nickname }}</p>
+              <p class="post-date">{{ post.createdAt }}</p>
+            </div>
+          </div>
+          <div v-if="isOwner" class="owner-actions">
+            <button class="action-btn btn-edit" @click="handleEdit">수정</button>
+            <button class="action-btn btn-delete" @click="handleDelete">삭제</button>
+          </div>
+        </div>
+
+        <!-- 러닝 트래커 사진 -->
+        <div class="tracker-photo">
+          <img v-if="post.photo" :src="post.photo" alt="러닝 트래커 사진" />
+          <div v-else class="tracker-placeholder">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c4cad6" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="3"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <span>[러닝 트래커 사진]</span>
+          </div>
+        </div>
+
+        <!-- 러닝 스탯 -->
+        <div class="stats-row">
+          <div class="stat-item">
+            <span class="stat-label">거리</span>
+            <span class="stat-value">{{ post.distance }} km</span>
+          </div>
+          <div class="stat-divider" />
+          <div class="stat-item">
+            <span class="stat-label">시간</span>
+            <span class="stat-value">{{ post.duration }}분</span>
+          </div>
+          <div class="stat-divider" />
+          <div class="stat-item">
+            <span class="stat-label">페이스</span>
+            <span class="stat-value">{{ post.pace }}</span>
+          </div>
+        </div>
+
+        <!-- 메모 -->
+        <p v-if="post.memo" class="post-memo">{{ post.memo }}</p>
+
+        <!-- 좋아요 / 신고 -->
+        <div class="post-footer">
+          <button class="like-btn" :class="{ liked: post.liked }" @click="toggleLike">
+            <svg width="16" height="16" viewBox="0 0 24 24" :fill="post.liked ? '#e53e3e' : 'none'" stroke="#e53e3e" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            좋아요 {{ post.likeCount }}개
+          </button>
+          <button
+            v-if="!isOwner"
+            class="report-link"
+            @click="openReport('post', post.id)"
+          >
+            신고
+          </button>
+        </div>
+      </section>
+
+      <!-- 오른쪽: 댓글 -->
+      <section class="comment-section">
+        <h2 class="comment-title">댓글 {{ totalCommentCount }}개</h2>
+
+        <div class="comment-list">
+          <div v-for="comment in comments" :key="comment.id" class="comment-block">
+
+            <!-- 댓글 -->
+            <div class="comment-item">
+              <div class="comment-avatar">
+                <img v-if="comment.profileImage" :src="comment.profileImage" :alt="comment.nickname" />
+                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+              <div class="comment-body">
+                <div class="comment-meta">
+                  <span class="comment-author">{{ comment.nickname }}</span>
+                  <span class="comment-date">{{ comment.createdAt }}</span>
+                </div>
+                <p class="comment-text">{{ comment.content }}</p>
+                <div class="comment-actions">
+                  <button class="text-btn" @click="toggleReplyInput(comment)">답글 달기</button>
+                  <button
+                    v-if="comment.authorId !== currentUserId && !isOwner"
+                    class="text-btn text-btn-report"
+                    @click="openReport('comment', comment.id)"
+                  >신고</button>
+                  <button
+                    v-if="comment.authorId === currentUserId"
+                    class="text-btn text-btn-delete"
+                    @click="deleteComment(comment.id)"
+                  >삭제</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 답글 입력 -->
+            <div v-if="comment.showReplyInput" class="reply-input-wrap">
+              <input
+                v-model="comment.replyInput"
+                type="text"
+                placeholder="답글을 입력하세요..."
+                class="reply-input"
+                maxlength="250"
+                @keyup.enter="submitReply(comment)"
+              />
+              <button class="reply-submit-btn" @click="submitReply(comment)">등록</button>
+            </div>
+
+            <!-- 답글 목록 -->
+            <div v-if="comment.replies.length > 0" class="reply-list">
+              <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+                <div class="comment-avatar reply-avatar">
+                  <img v-if="reply.profileImage" :src="reply.profileImage" :alt="reply.nickname" />
+                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div class="comment-body">
+                  <div class="comment-meta">
+                    <span class="comment-author">{{ reply.nickname }}</span>
+                    <span class="comment-date">{{ reply.createdAt }}</span>
+                  </div>
+                  <p class="comment-text">{{ reply.content }}</p>
+                  <div class="comment-actions">
+                    <button
+                      v-if="reply.authorId !== currentUserId && !isOwner"
+                      class="text-btn text-btn-report"
+                      @click="openReport('reply', reply.id)"
+                    >신고</button>
+                    <button
+                      v-if="reply.authorId === currentUserId"
+                      class="text-btn text-btn-delete"
+                      @click="deleteReply(comment.id, reply.id)"
+                    >삭제</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 댓글 입력 -->
+        <div class="comment-input-area">
+          <input
+            ref="commentInputRef"
+            v-model="newComment"
+            type="text"
+            placeholder="댓글을 입력하세요..."
+            class="comment-input"
+            maxlength="250"
+            @keyup.enter="submitComment"
+          />
+          <button class="comment-submit-btn" :disabled="!newComment.trim()" @click="submitComment">등록</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- ── 삭제 확인 모달 ── -->
+    <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
+      <div class="modal">
+        <h3 class="modal-title">일지를 삭제하시겠어요?</h3>
+        <p class="modal-desc">삭제된 일지는 복구할 수 없습니다.</p>
+        <div class="modal-actions">
+          <button class="modal-btn modal-cancel" @click="showDeleteConfirm = false">취소</button>
+          <button class="modal-btn modal-confirm" @click="confirmDelete">삭제</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 신고 모달 ── -->
+    <div v-if="showReportModal" class="modal-overlay" @click.self="showReportModal = false">
+      <div class="modal">
+        <h3 class="modal-title">신고 사유 선택</h3>
+        <div class="report-options">
+          <label class="report-option">
+            <input v-model="reportReason" type="radio" value="inappropriate" />
+            부적절한 콘텐츠
+          </label>
+          <label class="report-option">
+            <input v-model="reportReason" type="radio" value="etc" />
+            기타
+          </label>
+        </div>
+        <textarea
+          v-if="reportReason === 'etc'"
+          v-model="reportEtc"
+          placeholder="신고 사유를 입력하세요."
+          class="report-textarea"
+          maxlength="200"
+          rows="3"
+        />
+        <div class="modal-actions">
+          <button class="modal-btn modal-cancel" @click="showReportModal = false">취소</button>
+          <button class="modal-btn modal-confirm" :disabled="!reportReason" @click="submitReport">신고</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* ── 전체 레이아웃 ── */
+.page-wrap {
+  min-height: 100vh;
+  background: #f7f8fc;
+}
+
+/* ── 네비게이션 바 ── */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 52px;
+  background: #fff;
+  border-bottom: 1px solid #edf0f7;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.nav-brand {
+  font-size: 18px;
+  font-weight: 800;
+  color: #3b5bdb;
+  letter-spacing: -0.5px;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: none;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  border-color: #3b5bdb;
+  color: #3b5bdb;
+}
+
+.nav-my {
+  background: #3b5bdb;
+  border-color: #3b5bdb;
+  color: #fff;
+}
+
+.nav-my:hover {
+  background: #2f4ac7;
+  border-color: #2f4ac7;
+  color: #fff;
+}
+
+/* ── 페이지 제목 바 ── */
+.page-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 24px 12px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #4a5568;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.back-btn:hover {
+  background: #edf0f7;
+}
+
+.page-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+/* ── 2열 그리드 ── */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 60px;
+  align-items: start;
+}
+
+/* ── 일지 섹션 ── */
+.post-section {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #edf0f7;
+  overflow: hidden;
+}
+
+/* 작성자 헤더 */
+.post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+}
+
+.author-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #edf0f7;
+  border: 1.5px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.author-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 2px;
+}
+
+.post-date {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.owner-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-edit {
+  background: #eef2ff;
+  border: 1.5px solid #c5d0f5;
+  color: #3b5bdb;
+}
+
+.btn-edit:hover {
+  background: #dde5ff;
+}
+
+.btn-delete {
+  background: #fff5f5;
+  border: 1.5px solid #fed7d7;
+  color: #e53e3e;
+}
+
+.btn-delete:hover {
+  background: #ffe0e0;
+}
+
+/* 트래커 사진 */
+.tracker-photo {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #f1f3f7;
+  overflow: hidden;
+}
+
+.tracker-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tracker-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #b0b9c8;
+  font-size: 13px;
+}
+
+/* 스탯 */
+.stats-row {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f3f7;
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1a1a2e;
+  letter-spacing: -0.5px;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 32px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+/* 메모 */
+.post-memo {
+  padding: 14px 20px;
+  font-size: 14px;
+  color: #2d3748;
+  line-height: 1.6;
+  margin: 0;
+  border-bottom: 1px solid #f1f3f7;
+}
+
+/* 좋아요/신고 */
+.post-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+}
+
+.like-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #718096;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.like-btn:hover,
+.like-btn.liked {
+  color: #e53e3e;
+}
+
+.report-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: #94a3b8;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.report-link:hover {
+  color: #e53e3e;
+}
+
+/* ── 댓글 섹션 ── */
+.comment-section {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #edf0f7;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.comment-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #f1f3f7;
+}
+
+.comment-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 480px;
+  padding: 8px 0;
+}
+
+/* 댓글 블록 */
+.comment-block {
+  padding: 0 16px;
+  margin-bottom: 4px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.comment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #edf0f7;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.comment-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reply-avatar {
+  width: 26px;
+  height: 26px;
+}
+
+.comment-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.comment-author {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.comment-date {
+  font-size: 11px;
+  color: #b0b9c8;
+}
+
+.comment-text {
+  font-size: 13px;
+  color: #4a5568;
+  line-height: 1.5;
+  margin: 0 0 5px;
+  word-break: break-all;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.text-btn:hover {
+  color: #3b5bdb;
+}
+
+.text-btn-report:hover {
+  color: #e53e3e;
+}
+
+.text-btn-delete:hover {
+  color: #e53e3e;
+}
+
+/* 답글 입력 */
+.reply-input-wrap {
+  display: flex;
+  gap: 6px;
+  padding: 6px 0 6px 42px;
+}
+
+.reply-input {
+  flex: 1;
+  height: 34px;
+  border: 1.5px solid #dde3ed;
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 12px;
+  color: #1a1a2e;
+  outline: none;
+  background: #fafbfc;
+  transition: border-color 0.2s;
+}
+
+.reply-input:focus {
+  border-color: #3b5bdb;
+  background: #fff;
+}
+
+.reply-submit-btn {
+  height: 34px;
+  padding: 0 12px;
+  background: #3b5bdb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.reply-submit-btn:hover {
+  background: #2f4ac7;
+}
+
+/* 답글 목록 */
+.reply-list {
+  padding-left: 42px;
+  border-left: 2px solid #f1f3f7;
+  margin-left: 16px;
+}
+
+.reply-item {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+/* 댓글 입력 */
+.comment-input-area {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #f1f3f7;
+}
+
+.comment-input {
+  flex: 1;
+  height: 40px;
+  border: 1.5px solid #dde3ed;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 13px;
+  color: #1a1a2e;
+  outline: none;
+  background: #fafbfc;
+  transition: border-color 0.2s;
+}
+
+.comment-input::placeholder {
+  color: #b8c2d0;
+}
+
+.comment-input:focus {
+  border-color: #3b5bdb;
+  background: #fff;
+}
+
+.comment-submit-btn {
+  height: 40px;
+  padding: 0 16px;
+  background: #3b5bdb;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.comment-submit-btn:hover:not(:disabled) {
+  background: #2f4ac7;
+}
+
+.comment-submit-btn:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}
+
+/* ── 모달 ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 24px 20px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16);
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 8px;
+}
+
+.modal-desc {
+  font-size: 13px;
+  color: #718096;
+  margin: 0 0 20px;
+}
+
+.report-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.report-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #2d3748;
+  cursor: pointer;
+}
+
+.report-textarea {
+  width: 100%;
+  border: 1.5px solid #dde3ed;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1a1a2e;
+  outline: none;
+  resize: none;
+  margin-bottom: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.report-textarea:focus {
+  border-color: #3b5bdb;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-cancel {
+  background: #f7f8fc;
+  border: 1.5px solid #e2e8f0;
+  color: #718096;
+}
+
+.modal-cancel:hover {
+  border-color: #a0b0e0;
+  color: #3b5bdb;
+}
+
+.modal-confirm {
+  background: #e53e3e;
+  border: none;
+  color: #fff;
+}
+
+.modal-confirm:hover:not(:disabled) {
+  background: #c53030;
+}
+
+.modal-confirm:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 720px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+    padding: 0 16px 40px;
+  }
+
+  .page-title-bar {
+    padding: 16px 16px 10px;
+  }
+
+  .comment-list {
+    max-height: 340px;
+  }
+
+  .navbar {
+    padding: 0 16px;
+  }
+
+  .nav-btn {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+}
+</style>
