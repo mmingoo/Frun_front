@@ -1,7 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.js'
 
+const auth = useAuthStore() // const router = useRouter() 아래에 추가
 const router = useRouter()
 
 const nickname = ref('')
@@ -82,6 +84,7 @@ async function handleSubmit() {
     // if (profileImage.value) formData.append('profileImage', profileImage.value)
     // await api.post('/members/nickname', formData)
     await new Promise((r) => setTimeout(r, 500))
+    auth.hasNickname = true
     router.push('/feed')
   } finally {
     isLoading.value = false

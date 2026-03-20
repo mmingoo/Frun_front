@@ -8,6 +8,8 @@ import StatsView from '@/views/fo/stats/StatsView.vue'
 import FriendsView from '@/views/fo/friends/FriendsView.vue'
 import NotificationsView from '@/views/fo/notifications/NotificationsView.vue'
 import MyPageView from '@/views/fo/mypage/MyPageView.vue'
+import api from '@/api/index.js'
+import { useAuthStore } from '@/stores/auth.js'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -63,6 +65,32 @@ const router = createRouter({
       component: MyPageView,
     },
   ],
+})
+
+// 모든 페이지 이동 전에 실행
+router.beforeEach(async (to) => {
+  // / 는 LandingView에서 자체적으로 토큰 체크 후 리다이렉트 처리
+  if (to.path === '/') return true
+
+  //store 에서 hasNickname 확인
+  const auth = useAuthStore()
+
+  // 아직 모르는 상태면 닉네임이 있는지 없는지 여부를 반환하는 api 실행
+  if (auth.hasNickname === null) {
+    try {
+      const res = await api.get('/api/v1/members/me/nickname-status')
+      auth.hasNickname = res.data.data.hasNickname
+    } catch {
+      return '/'
+    }
+  }
+
+  // /signup/nickname은 로그인은 됐지만 닉네임 없는 유저만 접근 가능
+  if (to.path === '/signup/nickname') {
+    return auth.hasNickname ? '/feed' : true
+  }
+
+  if (!auth.hasNickname) return '/signup/nickname'
 })
 
 export default router
