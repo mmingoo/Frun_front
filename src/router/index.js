@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import LandingView from '@/views/fo/auth/LandingView.vue'
 import SetNickname from '@/views/fo/auth/SetNickname.vue'
 import WriteRunning from '@/views/fo/running/WriteRunning.vue'
 import FeedView from '@/views/fo/feed/FeedView.vue'
@@ -11,6 +12,11 @@ import MyPageView from '@/views/fo/mypage/MyPageView.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/',
+      name: 'LandingView',
+      component: LandingView,
+    },
     {
       path: '/signup/nickname',
       name: 'SetNickname',
