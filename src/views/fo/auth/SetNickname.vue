@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.js'
+import { checkNickname, setNickname } from '@/api/auth.js'
 
 const auth = useAuthStore() // const router = useRouter() 아래에 추가
 const router = useRouter()
@@ -57,16 +58,14 @@ async function checkDuplicate() {
   if (!nickname.value || nicknameError.value) return
   isLoading.value = true
   try {
-    // TODO: API 연동
-    // const res = await api.get(`/members/nickname/check?nickname=${nickname.value}`)
-    await new Promise((r) => setTimeout(r, 500))
-    const isTaken = false // mock
-    if (isTaken) {
+    const res = await checkNickname(nickname.value)
+    const exists = res.data.data.exists
+    if (exists) {
       duplicateStatus.value = 'error'
-      duplicateMessage.value = '이미 사용 중인 닉네임입니다.'
+      duplicateMessage.value = res.data.message
     } else {
       duplicateStatus.value = 'ok'
-      duplicateMessage.value = '사용 가능한 닉네임입니다.'
+      duplicateMessage.value = res.data.message
       isDuplicateChecked.value = true
     }
   } finally {
@@ -78,14 +77,11 @@ async function handleSubmit() {
   if (!canSubmit.value) return
   isLoading.value = true
   try {
-    // TODO: API 연동
-    // const formData = new FormData()
-    // formData.append('nickname', nickname.value)
-    // if (profileImage.value) formData.append('profileImage', profileImage.value)
-    // await api.post('/members/nickname', formData)
-    await new Promise((r) => setTimeout(r, 500))
+    await setNickname(nickname.value, profileImage.value)
     auth.hasNickname = true
     router.push('/feed')
+  } catch {
+    alert('닉네임 저장에 실패했습니다. 다시 시도해주세요.')
   } finally {
     isLoading.value = false
   }

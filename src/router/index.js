@@ -78,7 +78,7 @@ router.beforeEach(async (to) => {
   // 아직 모르는 상태면 닉네임이 있는지 없는지 여부를 반환하는 api 실행
   if (auth.hasNickname === null) {
     try {
-      const res = await api.get('/api/v1/members/me/nickname-status')
+      const res = await api.get('/api/v1/users/me/nickname-status')
       auth.hasNickname = res.data.data.hasNickname
     } catch {
       return '/'

@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { createRunning } from '@/api/running.js'
 
 const router = useRouter()
 const isLoading = ref(false)
@@ -96,12 +97,16 @@ async function handleSubmit() {
   if (!canSubmit.value) return
   isLoading.value = true
   try {
-    // TODO: API 연동
-    // const formData = new FormData()
-    // formData.append('runDate', `${runDate.value}T${runTime.value}`)
-    // formData.append('distance', distance.value)
-    // ...
-    await new Promise((r) => setTimeout(r, 600))
+    await createRunning({
+      runDate: runDate.value,
+      runTime: runTime.value,
+      distance: distance.value,
+      durationMin: durationMin.value,
+      durationSec: durationSec.value,
+      memo: memo.value,
+      isPublic: isPublic.value,
+      photos: photos.value,
+    })
     router.push('/feed')
   } finally {
     isLoading.value = false
@@ -440,6 +445,7 @@ function handleCancel() {
   border-radius: 10px;
   padding: 0 14px 0 36px;
   font-size: 14px;
+  font-family: inherit;
   color: #1a1a2e;
   outline: none;
   background: #fafbfc;

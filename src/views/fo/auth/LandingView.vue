@@ -3,14 +3,14 @@ import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.js'
 
-import api from '@/api/index.js'
+import { getNicknameStatus } from '@/api/auth.js'
 
 const router = useRouter()
 const auth = useAuthStore() // const router = useRouter() 아래에 추가
 
 onMounted(async () => {
   try {
-    const res = await api.get('/api/v1/members/me/nickname-status')
+    const res = await getNicknameStatus()
     auth.hasNickname = res.data.data.hasNickname
     router.replace(auth.hasNickname ? '/feed' : '/signup/nickname')
   } catch {
