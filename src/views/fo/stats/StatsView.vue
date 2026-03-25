@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -145,9 +145,29 @@ const allPeriodData = [
   { date: '2026-03-31', label: '3/31', day: '월', distance: 5.4 },
 ]
 
-const periodChartData = computed(() =>
-  allPeriodData.filter((d) => d.date >= appliedFrom.value && d.date <= appliedTo.value),
-)
+const periodChartData = computed(() => {
+  const dayNames = ['일', '월', '화', '수', '목', '금', '토']
+  const dataMap = Object.fromEntries(allPeriodData.map((d) => [d.date, d]))
+  const result = []
+  const cur = new Date(appliedFrom.value)
+  const end = new Date(appliedTo.value)
+  while (cur <= end) {
+    const y = cur.getFullYear()
+    const m = cur.getMonth() + 1
+    const d = cur.getDate()
+    const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    result.push(
+      dataMap[dateStr] ?? {
+        date: dateStr,
+        label: `${m}/${d}`,
+        day: dayNames[cur.getDay()],
+        distance: 0,
+      },
+    )
+    cur.setDate(cur.getDate() + 1)
+  }
+  return result
+})
 
 const periodStats = computed(() => {
   const data = periodChartData.value
@@ -180,7 +200,7 @@ const chartData = computed(() => weeklyChartData.value)
 
 const chartTitle = computed(() => {
   if (activeTab.value === 'week') return '주별 거리 막대 차트'
-  if (activeTab.value === 'month') return '월별 거리 막대 차트'
+  if (activeTab.value === 'month') return '달별 거리 막대 차트'
   return '기간별 거리 막대 차트'
 })
 
@@ -198,10 +218,54 @@ const yTicks = computed(() => {
 
 // ── 친구 기록 ─────────────────────────────────────────────
 const friendRecords = ref([
-  { id: 2, nickname: '친구A', profileImage: null, distance: 18.2 },
-  { id: 3, nickname: '친구B', profileImage: null, distance: 12.0 },
-  { id: 4, nickname: '친구C', profileImage: null, distance: 9.5 },
+  { id: 1, nickname: '친구A', profileImage: null, distance: 18.2 },
+  { id: 2, nickname: '친구B', profileImage: null, distance: 12.0 },
+  { id: 3, nickname: '친구C', profileImage: null, distance: 9.5 },
+  { id: 4, nickname: '친구D', profileImage: null, distance: 8.3 },
+  { id: 5, nickname: '친구E', profileImage: null, distance: 7.1 },
+  { id: 6, nickname: '친구F', profileImage: null, distance: 6.8 },
+  { id: 7, nickname: '친구G', profileImage: null, distance: 5.9 },
+  { id: 8, nickname: '친구H', profileImage: null, distance: 5.2 },
+  { id: 9, nickname: '친구I', profileImage: null, distance: 4.7 },
+  { id: 10, nickname: '친구J', profileImage: null, distance: 3.9 },
+  { id: 11, nickname: '친구K', profileImage: null, distance: 3.1 },
+  { id: 12, nickname: '친구L', profileImage: null, distance: 2.5 },
+  { id: 13, nickname: '친구M', profileImage: null, distance: 1.8 },
+  { id: 14, nickname: '친구N', profileImage: null, distance: 1.2 },
+  { id: 15, nickname: '친구O', profileImage: null, distance: 0.8 },
 ])
+
+const friendSearchQuery = ref('')
+
+const filteredFriendRecords = computed(() => {
+  if (!friendSearchQuery.value.trim()) return friendRecords.value
+  return friendRecords.value.filter((f) =>
+    f.nickname.toLowerCase().includes(friendSearchQuery.value.toLowerCase()),
+  )
+})
+
+const visibleCount = ref(6)
+const visibleFriends = computed(() => filteredFriendRecords.value.slice(0, visibleCount.value))
+
+watch(friendSearchQuery, () => {
+  visibleCount.value = 6
+})
+
+const sentinel = ref(null)
+let observer = null
+
+onMounted(() => {
+  observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && visibleCount.value < friendRecords.value.length) {
+      visibleCount.value = Math.min(visibleCount.value + 5, friendRecords.value.length)
+    }
+  })
+  if (sentinel.value) observer.observe(sentinel.value)
+})
+
+onBeforeUnmount(() => {
+  if (observer) observer.disconnect()
+})
 
 const friendPanelTitle = computed(() => {
   if (activeTab.value === 'week') return '친구 이번 주 기록'
@@ -377,21 +441,20 @@ const friendPanelTitle = computed(() => {
             <!-- ── 기간별: flat 가로 스크롤 차트 ── -->
             <template v-else-if="activeTab === 'period'">
               <div class="monthly-chart-wrap">
+                <!-- Y축 (고정) -->
                 <div class="monthly-y-axis period-y-axis">
                   <span v-for="tick in periodYTicks" :key="tick" class="y-tick">{{ tick }}</span>
                 </div>
+                <!-- 가로 스크롤 영역 -->
                 <div class="chart-scroll-wrap">
-                  <div class="period-chart-body">
-                    <div class="grid-layer period-grid" aria-hidden="true">
-                      <div v-for="i in 5" :key="i" class="grid-line" />
-                    </div>
-                    <div class="chart-scroll period-scroll">
-                      <div
-                        v-for="item in periodChartData"
-                        :key="item.label"
-                        class="bar-col period-bar-col"
-                      >
-                        <div class="bar-wrap">
+                  <!-- chart-scroll 직접 사용 → width: max-content 보장 → 스크롤 동작 -->
+                  <div class="chart-scroll">
+                    <div class="period-bar-section">
+                      <div class="grid-layer period-gl" aria-hidden="true">
+                        <div v-for="i in 5" :key="i" class="grid-line" />
+                      </div>
+                      <div v-for="item in periodChartData" :key="item.date" class="period-col-item">
+                        <div class="period-bar-wrap">
                           <div
                             class="bar"
                             :style="{ height: (item.distance / periodMaxDistance) * 140 + 'px' }"
@@ -446,14 +509,36 @@ const friendPanelTitle = computed(() => {
         <!-- 친구 기록 -->
         <div class="friends-card">
           <h2 class="friends-title">{{ friendPanelTitle }}</h2>
+          <div class="friends-search-row">
+            <div class="friends-search-box">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#94a3b8"
+                stroke-width="2"
+                class="friends-search-icon"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                v-model="friendSearchQuery"
+                type="text"
+                class="friends-search-input"
+                placeholder="닉네임 검색"
+              />
+            </div>
+          </div>
           <ul class="friends-list">
-            <li v-for="friend in friendRecords" :key="friend.id" class="friends-item">
+            <li v-for="friend in visibleFriends" :key="friend.id" class="friends-item">
               <div class="friend-avatar">
                 <img v-if="friend.profileImage" :src="friend.profileImage" :alt="friend.nickname" />
                 <svg
                   v-else
-                  width="18"
-                  height="18"
+                  width="12"
+                  height="12"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="#94a3b8"
@@ -464,8 +549,12 @@ const friendPanelTitle = computed(() => {
                 </svg>
               </div>
               <span class="friend-name">{{ friend.nickname }}</span>
-              <span class="friend-dist">{{ friend.distance }} km</span>
             </li>
+            <li
+              v-if="visibleCount < filteredFriendRecords.length"
+              ref="sentinel"
+              class="friends-sentinel"
+            />
           </ul>
         </div>
       </div>

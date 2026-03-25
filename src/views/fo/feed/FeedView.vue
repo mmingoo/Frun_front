@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, next } from 'vue'
 import { useRouter } from 'vue-router'
-import { reportPost } from '@/api/feed.js'
+import { getFeed, reportPost } from '@/api/feed.js'
+import './FeedView.css'
 
 const router = useRouter()
 
@@ -47,7 +48,10 @@ function loadMoreFriends() {
   }, 400)
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadFeed()
+
+  // 친구 목록
   if (!friendSentinelRef.value) return
   friendObserver = new IntersectionObserver(
     (entries) => {
@@ -88,40 +92,39 @@ const pagedNotices = computed(() => {
   return notices.value.slice(start, start + NOTICE_PAGE_SIZE)
 })
 
-const posts = ref([
-  {
-    id: 1,
-    authorId: 2,
-    nickname: '러너_닉네임',
-    profileImage: null,
-    createdAt: '2026.04.10 06:30',
-    photo: null,
-    distance: null,
-    duration: null,
-    pace: null,
-    memo: null,
-    likeCount: 24,
-    liked: false,
-    commentCount: 8,
-    isPublic: true,
-  },
-  {
-    id: 2,
-    authorId: 2,
-    nickname: '러너_닉네임',
-    profileImage: null,
-    createdAt: '2026.04.10 06:30',
-    photo: null,
-    distance: 5.2,
-    duration: 32,
-    pace: '6\'09"',
-    memo: '오늘도 완주! 날씨가 좋아서 기분 좋았다 😊',
-    likeCount: 24,
-    liked: false,
-    commentCount: 8,
-    isPublic: true,
-  },
-])
+const posts = ref([]) // 피드 목록
+const cursorId = ref(null) // 다음 요청용 커서
+const hasNext = ref(true) // 다음 페이지 존재 여부
+const isFeedLoading = ref(false) // 로딩 상태
+
+async function loadFeed() {
+  //이미 로딩 중이거나 다음에 불러올 데이터가 없는 경우 중단
+  if (isFeedLoading.value || !hasNext.value) return
+
+  // 로딩 시작 표시, 스피너 보여주기 위해
+  isFeedLoading.value = true
+  try {
+    const res = await getFeed(cursorId.value)
+
+    // 요청 받아온 백엔드 데이터들 할당
+    const { feeds, hasNext: next, nextCursorId } = res.data.data
+
+    // posts 변수에 불러온 피드들 복사 (필드 정규화)
+    const normalized = feeds.map((f) => ({
+      ...f,
+      nickname: f.nickName ?? f.nickname ?? '',
+      createdAt: f.createdAt ? f.createdAt.slice(0, 16).replace('T', ' ') : '',
+    }))
+    posts.value.push(...normalized)
+
+    hasNext.value = next
+    cursorId.value = nextCursorId
+  } catch (e) {
+    console.error('피드 로딩 실패', e)
+  } finally {
+    isFeedLoading.value = false
+  }
+}
 
 // ── 좋아요 ────────────────────────────────────────────────
 function toggleLike(post) {
@@ -286,7 +289,10 @@ async function submitReport() {
       <!-- ② 가운데: 피드 -->
       <main class="feed-col">
         <!-- 피드 카드 목록 -->
-        <div class="feed-list">
+        <div v-if="posts.length === 0" class="feed-empty">
+          친구의 게시글이 없습니다
+        </div>
+        <div v-else class="feed-list">
           <article v-for="post in posts" :key="post.id" class="post-card">
             <!-- 카드 헤더 -->
             <div class="post-header">
@@ -552,4 +558,3 @@ async function submitReport() {
   </div>
 </template>
 
-<style scoped src="./FeedView.css" />

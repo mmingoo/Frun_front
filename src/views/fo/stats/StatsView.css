@@ -117,6 +117,7 @@
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  min-height: 38px;
 }
 
 .tab-btn {
@@ -242,7 +243,7 @@
   display: grid;
   grid-template-columns: 1fr 260px;
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 
 /* ── 차트 카드 ── */
@@ -252,6 +253,8 @@
   border-radius: 16px;
   padding: 24px;
   min-height: 240px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .chart-inner {
@@ -259,6 +262,7 @@
   flex-direction: column;
   align-items: center;
   gap: 16px;
+  width: 100%;
 }
 
 /* ── 막대 차트 ── */
@@ -267,6 +271,7 @@
   align-items: flex-start;
   width: 100%;
   gap: 6px;
+  margin-top: 16px;
 }
 
 .y-axis {
@@ -374,6 +379,7 @@
   display: flex;
   align-items: flex-start;
   width: 100%;
+  min-width: 0;
   gap: 6px;
 }
 
@@ -462,49 +468,57 @@
   bottom: 18px;
 }
 
-/* ── 기간별 flat 스크롤 ── */
+/* ── 기간별 차트 ── */
+
+/* Y축: week-header 없으므로 top padding 제거, 하단은 label 2줄 높이만큼 */
 .period-y-axis {
-  height: 240px;
+  padding: 0 0 36px;
+  height: 214px; /* bar 영역(140px) + 여유 + label 2줄(36px) */
 }
 
-.period-chart-body {
+/* 기간별 bar 섹션: chart-scroll 직접 자식 → width:max-content 상속으로 스크롤 보장 */
+.period-bar-section {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 0 4px;
+  height: 214px; /* 막대 최대 140px + 상단 여유 38px + label 2줄 36px */
   position: relative;
-  height: 240px;
-  min-width: max-content;
 }
 
-.period-grid {
+/* 기간별 그리드: label 영역(36px)을 제외한 bar 영역에만 표시 */
+.period-gl {
   top: 0;
-  bottom: 28px;
+  bottom: 36px;
   left: 0;
   right: 0;
 }
 
-.period-scroll {
-  align-items: flex-end;
-  height: 240px;
-  padding: 0 4px;
-  position: relative;
-  z-index: 1;
-}
-
-.period-bar-col {
+/* 기간별 개별 컬럼 */
+.period-col-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  height: 100%;
   justify-content: flex-end;
+  width: 36px;
+  flex: 0 0 36px;
+  height: 100%;
+  gap: 3px;
   position: relative;
   z-index: 1;
-  width: 36px;
 }
 
-.period-bar-col .bar-label,
-.period-bar-col .bar-sublabel {
-  transform: translateY(6px);
+/* 기간별 bar wrap: 남은 공간을 차지하고 bar를 하단 정렬 */
+.period-bar-wrap {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+  width: 100%;
 }
 
+/* 요일 보조 레이블 */
 .bar-sublabel {
   font-size: 10px;
   color: #b0b9c8;
@@ -524,13 +538,53 @@
   border: 1px solid #edf0f7;
   border-radius: 16px;
   padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
 }
 
 .friends-title {
   font-size: 13px;
   font-weight: 700;
   color: #2d3748;
-  margin: 0 0 14px;
+  margin: 0 0 10px;
+}
+
+.friends-search-row {
+  margin-bottom: 8px;
+}
+
+.friends-search-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0 10px;
+  height: 28px;
+  transition: border-color 0.2s;
+}
+
+.friends-search-box:focus-within {
+  border-color: #3b5bdb;
+}
+
+.friends-search-icon {
+  flex-shrink: 0;
+}
+
+.friends-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 11px;
+  font-family: inherit;
+  color: #1a1a2e;
+  background: transparent;
+}
+
+.friends-search-input::placeholder {
+  color: #b0b9c8;
 }
 
 .friends-list {
@@ -539,18 +593,39 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  max-height: 178px; /* 아이템 28px × 6 + gap 2px × 5 = 178px */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #dde3ed transparent;
+}
+
+.friends-list::-webkit-scrollbar {
+  width: 3px;
+}
+
+.friends-list::-webkit-scrollbar-thumb {
+  background: #dde3ed;
+  border-radius: 4px;
+}
+
+.friends-sentinel {
+  height: 1px;
+  flex-shrink: 0;
 }
 
 .friends-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
   background: #f7f8fc;
   cursor: pointer;
   transition: background 0.15s;
+  flex-shrink: 0;
+  height: 28px;
+  box-sizing: border-box;
 }
 
 .friends-item:hover {
@@ -558,8 +633,8 @@
 }
 
 .friend-avatar {
-  width: 34px;
-  height: 34px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: #edf0f7;
   border: 1px solid #e2e8f0;
@@ -578,13 +653,13 @@
 
 .friend-name {
   flex: 1;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   color: #2d3748;
 }
 
 .friend-dist {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   color: #3b5bdb;
 }
