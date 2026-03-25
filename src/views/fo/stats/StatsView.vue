@@ -10,27 +10,27 @@ const activeTab = ref('week') // 'week' | 'month' | 'period'
 // ── 기간별 날짜 ───────────────────────────────────────────
 const periodFrom = ref('2026-03-01')
 const periodTo = ref('2026-03-17')
+const appliedFrom = ref('2026-03-01')
+const appliedTo = ref('2026-03-17')
+
+function searchPeriod() {
+  appliedFrom.value = periodFrom.value
+  appliedTo.value = periodTo.value
+}
 
 // ── 목 데이터 ──────────────────────────────────────────────
 const weekStats = ref({
   totalDistance: 23.5,
   count: 4,
-  avgPace: "6'02\"",
+  avgPace: '6\'02"',
   totalTime: '3시간 52분',
 })
 
 const monthStats = ref({
   totalDistance: 87.3,
   count: 14,
-  avgPace: "6'10\"",
+  avgPace: '6\'10"',
   totalTime: '14시간 28분',
-})
-
-const periodStats = ref({
-  totalDistance: 45.0,
-  count: 8,
-  avgPace: "6'05\"",
-  totalTime: '7시간 18분',
 })
 
 const currentStats = computed(() => {
@@ -50,28 +50,133 @@ const weeklyChartData = ref([
   { label: '일', distance: 0 },
 ])
 
-const monthlyChartData = ref([
-  { label: '1주', distance: 18.5 },
-  { label: '2주', distance: 23.5 },
-  { label: '3주', distance: 23.5 },
-  { label: '4주', distance: 21.8 },
+const monthlyWeeks = ref([
+  {
+    label: '1주',
+    total: 18.5,
+    days: [
+      { label: '월', distance: 0 },
+      { label: '화', distance: 5.2 },
+      { label: '수', distance: 0 },
+      { label: '목', distance: 7.8 },
+      { label: '금', distance: 4.1 },
+      { label: '토', distance: 1.0 },
+      { label: '일', distance: 0.4 },
+    ],
+  },
+  {
+    label: '2주',
+    total: 23.5,
+    days: [
+      { label: '월', distance: 6.2 },
+      { label: '화', distance: 0 },
+      { label: '수', distance: 8.1 },
+      { label: '목', distance: 0 },
+      { label: '금', distance: 5.4 },
+      { label: '토', distance: 3.8 },
+      { label: '일', distance: 0 },
+    ],
+  },
+  {
+    label: '3주',
+    total: 23.5,
+    days: [
+      { label: '월', distance: 0 },
+      { label: '화', distance: 7.5 },
+      { label: '수', distance: 4.2 },
+      { label: '목', distance: 0 },
+      { label: '금', distance: 6.8 },
+      { label: '토', distance: 5.0 },
+      { label: '일', distance: 0 },
+    ],
+  },
+  {
+    label: '4주',
+    total: 21.8,
+    days: [
+      { label: '월', distance: 5.5 },
+      { label: '화', distance: 0 },
+      { label: '수', distance: 7.2 },
+      { label: '목', distance: 4.6 },
+      { label: '금', distance: 0 },
+      { label: '토', distance: 4.5 },
+      { label: '일', distance: 0 },
+    ],
+  },
 ])
 
-const periodChartData = ref([
-  { label: '3/1', distance: 5.2 },
-  { label: '3/4', distance: 7.8 },
-  { label: '3/7', distance: 4.1 },
-  { label: '3/10', distance: 6.4 },
-  { label: '3/13', distance: 5.5 },
-  { label: '3/16', distance: 8.0 },
-  { label: '3/17', distance: 8.0 },
-])
-
-const chartData = computed(() => {
-  if (activeTab.value === 'week') return weeklyChartData.value
-  if (activeTab.value === 'month') return monthlyChartData.value
-  return periodChartData.value
+const monthlyMaxDistance = computed(() => {
+  const all = monthlyWeeks.value.flatMap((w) => w.days.map((d) => d.distance))
+  return Math.max(...all) || 1
 })
+
+// 3월 전체 일별 데이터 (실제로는 API)
+const allPeriodData = [
+  { date: '2026-03-01', label: '3/1', day: '토', distance: 5.2 },
+  { date: '2026-03-02', label: '3/2', day: '일', distance: 0 },
+  { date: '2026-03-03', label: '3/3', day: '월', distance: 3.1 },
+  { date: '2026-03-04', label: '3/4', day: '화', distance: 7.8 },
+  { date: '2026-03-05', label: '3/5', day: '수', distance: 0 },
+  { date: '2026-03-06', label: '3/6', day: '목', distance: 4.1 },
+  { date: '2026-03-07', label: '3/7', day: '금', distance: 6.4 },
+  { date: '2026-03-08', label: '3/8', day: '토', distance: 0 },
+  { date: '2026-03-09', label: '3/9', day: '일', distance: 2.1 },
+  { date: '2026-03-10', label: '3/10', day: '월', distance: 5.5 },
+  { date: '2026-03-11', label: '3/11', day: '화', distance: 8.0 },
+  { date: '2026-03-12', label: '3/12', day: '수', distance: 0 },
+  { date: '2026-03-13', label: '3/13', day: '목', distance: 4.8 },
+  { date: '2026-03-14', label: '3/14', day: '금', distance: 3.2 },
+  { date: '2026-03-15', label: '3/15', day: '토', distance: 6.1 },
+  { date: '2026-03-16', label: '3/16', day: '일', distance: 0 },
+  { date: '2026-03-17', label: '3/17', day: '월', distance: 5.1 },
+  { date: '2026-03-18', label: '3/18', day: '화', distance: 7.3 },
+  { date: '2026-03-19', label: '3/19', day: '수', distance: 0 },
+  { date: '2026-03-20', label: '3/20', day: '목', distance: 4.5 },
+  { date: '2026-03-21', label: '3/21', day: '금', distance: 6.8 },
+  { date: '2026-03-22', label: '3/22', day: '토', distance: 0 },
+  { date: '2026-03-23', label: '3/23', day: '일', distance: 3.9 },
+  { date: '2026-03-24', label: '3/24', day: '월', distance: 5.6 },
+  { date: '2026-03-25', label: '3/25', day: '화', distance: 7.1 },
+  { date: '2026-03-26', label: '3/26', day: '수', distance: 0 },
+  { date: '2026-03-27', label: '3/27', day: '목', distance: 4.3 },
+  { date: '2026-03-28', label: '3/28', day: '금', distance: 6.0 },
+  { date: '2026-03-29', label: '3/29', day: '토', distance: 0 },
+  { date: '2026-03-30', label: '3/30', day: '일', distance: 2.8 },
+  { date: '2026-03-31', label: '3/31', day: '월', distance: 5.4 },
+]
+
+const periodChartData = computed(() =>
+  allPeriodData.filter((d) => d.date >= appliedFrom.value && d.date <= appliedTo.value),
+)
+
+const periodStats = computed(() => {
+  const data = periodChartData.value
+  const totalDistance = +data.reduce((s, d) => s + d.distance, 0).toFixed(1)
+  const count = data.filter((d) => d.distance > 0).length
+  const totalMin = Math.round(totalDistance * 6.08)
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return {
+    totalDistance,
+    count,
+    avgPace: count > 0 ? '6\'05"' : '-',
+    totalTime: h > 0 ? `${h}시간 ${m}분` : `${m}분`,
+  }
+})
+
+const periodMaxDistance = computed(() => {
+  const max = Math.max(...periodChartData.value.map((d) => d.distance))
+  return max || 1
+})
+
+const periodYTicks = computed(() => {
+  const max = periodMaxDistance.value
+  return [max, max * 0.75, max * 0.5, max * 0.25, 0].map((v) =>
+    v === 0 ? '0' : Number(v.toFixed(1)),
+  )
+})
+
+const chartData = computed(() => weeklyChartData.value)
 
 const chartTitle = computed(() => {
   if (activeTab.value === 'week') return '주별 거리 막대 차트'
@@ -82,6 +187,13 @@ const chartTitle = computed(() => {
 const maxDistance = computed(() => {
   const max = Math.max(...chartData.value.map((d) => d.distance))
   return max || 1
+})
+
+const yTicks = computed(() => {
+  const max = maxDistance.value
+  return [max, max * 0.75, max * 0.5, max * 0.25, 0].map((v) =>
+    v === 0 ? '0' : Number(v.toFixed(1)),
+  )
 })
 
 // ── 친구 기록 ─────────────────────────────────────────────
@@ -103,10 +215,19 @@ const friendPanelTitle = computed(() => {
     <!-- ── 네비게이션 바 ── -->
     <header class="navbar">
       <button class="nav-logo" @click="router.push('/feed')">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0"/>
-          <path d="M7.5 15.5 9 11l3 2 2-5"/>
-          <path d="M4 19l3.5-3.5"/>
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#3b5bdb"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0" />
+          <path d="M7.5 15.5 9 11l3 2 2-5" />
+          <path d="M4 19l3.5-3.5" />
         </svg>
         <span class="nav-brand">Frun</span>
       </button>
@@ -115,15 +236,29 @@ const friendPanelTitle = computed(() => {
         <button class="nav-item active" @click="router.push('/stats')">동계</button>
         <button class="nav-item" @click="router.push('/friends')">친구</button>
         <button class="nav-icon-btn" @click="router.push('/notifications')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
         </button>
         <button class="nav-btn-my" @click="router.push('/mypage')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
           </svg>
           MY
         </button>
@@ -132,30 +267,35 @@ const friendPanelTitle = computed(() => {
 
     <!-- ── 메인 콘텐츠 ── -->
     <div class="main-wrap">
-
       <!-- 탭 + 기간 선택 -->
       <div class="tab-bar">
         <button
           class="tab-btn"
           :class="{ active: activeTab === 'week' }"
           @click="activeTab = 'week'"
-        >주별</button>
+        >
+          주별
+        </button>
         <button
           class="tab-btn"
           :class="{ active: activeTab === 'month' }"
           @click="activeTab = 'month'"
-        >전별</button>
+        >
+          달별
+        </button>
         <button
           class="tab-btn"
           :class="{ active: activeTab === 'period' }"
           @click="activeTab = 'period'"
-        >기간별</button>
+        >
+          기간별
+        </button>
 
         <div v-if="activeTab === 'period'" class="period-picker">
           <input type="date" v-model="periodFrom" class="date-input" />
           <span class="period-sep">~</span>
           <input type="date" v-model="periodTo" class="date-input" />
-          <button class="period-search-btn">조회</button>
+          <button class="period-search-btn" @click="searchPeriod">조회</button>
         </div>
         <div v-else class="period-picker-placeholder" />
       </div>
@@ -190,27 +330,115 @@ const friendPanelTitle = computed(() => {
 
       <!-- 차트 + 친구 기록 -->
       <div class="content-grid">
-
         <!-- 차트 영역 -->
         <div class="chart-card">
           <div class="chart-inner">
-            <!-- SVG 막대 차트 -->
-            <div class="bar-chart">
-              <div
-                v-for="item in chartData"
-                :key="item.label"
-                class="bar-col"
-              >
-                <span class="bar-value">{{ item.distance > 0 ? item.distance : '' }}</span>
-                <div class="bar-wrap">
-                  <div
-                    class="bar"
-                    :style="{ height: (item.distance / maxDistance) * 140 + 'px' }"
-                  />
+            <!-- ── 달별: 요일 × 주별 스크롤 차트 ── -->
+            <template v-if="activeTab === 'month'">
+              <div class="monthly-chart-wrap">
+                <!-- Y축 (고정) -->
+                <div class="monthly-y-axis">
+                  <span v-for="tick in yTicks" :key="tick" class="y-tick">{{ tick }}</span>
                 </div>
-                <span class="bar-label">{{ item.label }}</span>
+                <!-- 가로 스크롤 영역 -->
+                <div class="chart-scroll-wrap">
+                  <div class="chart-scroll">
+                    <div v-for="week in monthlyWeeks" :key="week.label" class="week-group">
+                      <!-- 주 합계 헤더 -->
+                      <div class="week-header">
+                        <span class="week-label">{{ week.label }}</span>
+                        <span class="week-total">{{ week.total }} km</span>
+                      </div>
+                      <!-- 요일별 막대 -->
+                      <div class="week-bars">
+                        <div class="grid-layer" aria-hidden="true">
+                          <div v-for="i in 5" :key="i" class="grid-line" />
+                        </div>
+                        <div v-for="day in week.days" :key="day.label" class="bar-col">
+                          <div class="bar-wrap">
+                            <div
+                              class="bar"
+                              :style="{ height: (day.distance / monthlyMaxDistance) * 140 + 'px' }"
+                            >
+                              <span v-if="day.distance > 0" class="bar-value">{{
+                                day.distance
+                              }}</span>
+                            </div>
+                          </div>
+                          <span class="bar-label">{{ day.label }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            </template>
+
+            <!-- ── 기간별: flat 가로 스크롤 차트 ── -->
+            <template v-else-if="activeTab === 'period'">
+              <div class="monthly-chart-wrap">
+                <div class="monthly-y-axis period-y-axis">
+                  <span v-for="tick in periodYTicks" :key="tick" class="y-tick">{{ tick }}</span>
+                </div>
+                <div class="chart-scroll-wrap">
+                  <div class="period-chart-body">
+                    <div class="grid-layer period-grid" aria-hidden="true">
+                      <div v-for="i in 5" :key="i" class="grid-line" />
+                    </div>
+                    <div class="chart-scroll period-scroll">
+                      <div
+                        v-for="item in periodChartData"
+                        :key="item.label"
+                        class="bar-col period-bar-col"
+                      >
+                        <div class="bar-wrap">
+                          <div
+                            class="bar"
+                            :style="{ height: (item.distance / periodMaxDistance) * 140 + 'px' }"
+                          >
+                            <span v-if="item.distance > 0" class="bar-value">{{
+                              item.distance
+                            }}</span>
+                          </div>
+                        </div>
+                        <span class="bar-label">{{ item.label }}</span>
+                        <span class="bar-sublabel">{{ item.day }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- ── 주별: 기존 차트 ── -->
+            <template v-else>
+              <div class="chart-area">
+                <div class="y-axis">
+                  <span v-for="tick in yTicks" :key="tick" class="y-tick">{{ tick }}</span>
+                </div>
+                <div class="chart-body">
+                  <div class="grid-layer" aria-hidden="true">
+                    <div v-for="i in 5" :key="i" class="grid-line" />
+                  </div>
+                  <div class="bar-chart">
+                    <div v-for="item in chartData" :key="item.label" class="bar-col">
+                      <div class="bar-wrap">
+                        <div
+                          class="bar"
+                          :style="{ height: (item.distance / maxDistance) * 140 + 'px' }"
+                        >
+                          <span v-if="item.distance > 0" class="bar-value">{{
+                            item.distance
+                          }}</span>
+                        </div>
+                      </div>
+                      <span class="bar-label">{{ item.label }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
             <p class="chart-placeholder-text">[{{ chartTitle }}]</p>
           </div>
         </div>
@@ -219,16 +447,20 @@ const friendPanelTitle = computed(() => {
         <div class="friends-card">
           <h2 class="friends-title">{{ friendPanelTitle }}</h2>
           <ul class="friends-list">
-            <li
-              v-for="friend in friendRecords"
-              :key="friend.id"
-              class="friends-item"
-            >
+            <li v-for="friend in friendRecords" :key="friend.id" class="friends-item">
               <div class="friend-avatar">
                 <img v-if="friend.profileImage" :src="friend.profileImage" :alt="friend.nickname" />
-                <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
+                <svg
+                  v-else
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#94a3b8"
+                  stroke-width="1.8"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
                 </svg>
               </div>
               <span class="friend-name">{{ friend.nickname }}</span>
@@ -241,433 +473,4 @@ const friendPanelTitle = computed(() => {
   </div>
 </template>
 
-<style scoped>
-/* ── 전체 ── */
-.page-wrap {
-  min-height: 100vh;
-  background: #f7f8fc;
-}
-
-/* ── 네비게이션 바 ── */
-.navbar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 28px;
-  height: 52px;
-  background: #fff;
-  border-bottom: 1px solid #edf0f7;
-}
-
-.nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-}
-
-.nav-brand {
-  font-size: 18px;
-  font-weight: 800;
-  color: #3b5bdb;
-  letter-spacing: -0.5px;
-}
-
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.nav-item {
-  padding: 6px 14px;
-  background: none;
-  border: none;
-  font-size: 14px;
-  font-weight: 500;
-  color: #718096;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.2s;
-}
-
-.nav-item:hover,
-.nav-item.active {
-  color: #3b5bdb;
-  background: #eef2ff;
-  font-weight: 600;
-}
-
-.nav-icon-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #718096;
-  border-radius: 8px;
-  transition: all 0.2s;
-  margin-left: 2px;
-}
-
-.nav-icon-btn:hover {
-  color: #3b5bdb;
-  background: #eef2ff;
-}
-
-.nav-btn-my {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  height: 34px;
-  padding: 0 14px;
-  background: #3b5bdb;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s;
-  margin-left: 4px;
-}
-
-.nav-btn-my:hover {
-  background: #2f4ac7;
-}
-
-/* ── 메인 래퍼 ── */
-.main-wrap {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 28px 20px 60px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* ── 탭 ── */
-.tab-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.tab-btn {
-  padding: 7px 22px;
-  background: #fff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #718096;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.tab-btn.active {
-  background: #3b5bdb;
-  border-color: #3b5bdb;
-  color: #fff;
-  font-weight: 700;
-}
-
-.tab-btn:hover:not(.active) {
-  border-color: #3b5bdb;
-  color: #3b5bdb;
-  background: #eef2ff;
-}
-
-/* ── 기간 선택 ── */
-.period-picker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.period-picker-placeholder {
-  margin-left: auto;
-}
-
-.date-input {
-  height: 38px;
-  padding: 0 12px;
-  border: 1.5px solid #dde3ed;
-  border-radius: 10px;
-  font-size: 13px;
-  font-family: inherit;
-  color: #1a1a2e;
-  background: #fff;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.date-input:focus {
-  border-color: #3b5bdb;
-}
-
-.period-sep {
-  font-size: 14px;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-.period-search-btn {
-  height: 38px;
-  padding: 0 18px;
-  background: #3b5bdb;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.period-search-btn:hover {
-  background: #2f4ac7;
-}
-
-/* ── 요약 통계 행 ── */
-.summary-row {
-  display: flex;
-  align-items: center;
-  background: #fff;
-  border: 1px solid #edf0f7;
-  border-radius: 16px;
-  padding: 20px 32px;
-  gap: 0;
-}
-
-.summary-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.summary-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #94a3b8;
-  letter-spacing: 0.2px;
-  text-align: center;
-}
-
-.summary-value {
-  font-size: 20px;
-  font-weight: 800;
-  color: #1a1a2e;
-  letter-spacing: -0.5px;
-}
-
-.summary-divider {
-  width: 1px;
-  height: 36px;
-  background: #edf0f7;
-  flex-shrink: 0;
-}
-
-/* ── 콘텐츠 그리드 ── */
-.content-grid {
-  display: grid;
-  grid-template-columns: 1fr 260px;
-  gap: 20px;
-  align-items: start;
-}
-
-/* ── 차트 카드 ── */
-.chart-card {
-  background: #fff;
-  border: 1px solid #edf0f7;
-  border-radius: 16px;
-  padding: 24px;
-  min-height: 240px;
-}
-
-.chart-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-/* ── 막대 차트 ── */
-.bar-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  width: 100%;
-  height: 180px;
-  padding: 0 12px;
-}
-
-.bar-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  height: 100%;
-  justify-content: flex-end;
-}
-
-.bar-value {
-  font-size: 11px;
-  font-weight: 700;
-  color: #3b5bdb;
-  min-height: 16px;
-}
-
-.bar-wrap {
-  width: 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  flex: 1;
-}
-
-.bar {
-  width: 100%;
-  max-width: 48px;
-  background: linear-gradient(180deg, #5c7cfa 0%, #3b5bdb 100%);
-  border-radius: 6px 6px 3px 3px;
-  min-height: 0;
-  transition: height 0.4s ease;
-}
-
-.bar-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #94a3b8;
-}
-
-.chart-placeholder-text {
-  font-size: 13px;
-  color: #b0b9c8;
-  margin: 0;
-}
-
-/* ── 친구 기록 카드 ── */
-.friends-card {
-  background: #fff;
-  border: 1px solid #edf0f7;
-  border-radius: 16px;
-  padding: 20px 18px;
-}
-
-.friends-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: #2d3748;
-  margin: 0 0 14px;
-}
-
-.friends-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.friends-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: #f7f8fc;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.friends-item:hover {
-  background: #eef2ff;
-}
-
-.friend-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #edf0f7;
-  border: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-
-.friend-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.friend-name {
-  flex: 1;
-  font-size: 13px;
-  font-weight: 500;
-  color: #2d3748;
-}
-
-.friend-dist {
-  font-size: 13px;
-  font-weight: 700;
-  color: #3b5bdb;
-}
-
-/* ── 반응형 ── */
-@media (max-width: 760px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .summary-row {
-    padding: 16px 16px;
-    gap: 0;
-  }
-
-  .summary-value {
-    font-size: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  .main-wrap {
-    padding: 18px 14px 40px;
-  }
-
-  .navbar {
-    padding: 0 16px;
-  }
-
-  .summary-row {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .summary-divider {
-    display: none;
-  }
-
-  .summary-item {
-    min-width: 45%;
-  }
-}
-</style>
+<style scoped src="./StatsView.css" />
