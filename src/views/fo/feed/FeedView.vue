@@ -3,9 +3,18 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { getFeed, reportPost } from '@/api/feed.js'
 import { getFriendList } from '@/api/friend.js'
+import { logout } from '@/api/auth.js'
+import { useAuthStore } from '@/stores/auth.js'
 import './FeedView.css'
 
 const router = useRouter()
+const auth = useAuthStore()
+
+async function handleLogout() {
+  await logout()
+  auth.logout()
+  router.replace('/')
+}
 
 // ── 목 데이터 ──────────────────────────────────────────────
 const currentUserId = 1
@@ -228,6 +237,21 @@ async function submitReport() {
             <circle cx="12" cy="7" r="4" />
           </svg>
           MY
+        </button>
+        <button class="nav-btn-my" @click="handleLogout">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          로그아웃
         </button>
       </div>
     </header>

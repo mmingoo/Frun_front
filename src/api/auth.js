@@ -17,3 +17,7 @@ export function setNickname(nickname, profileImage) {
   if (profileImage) formData.append('profileImage', profileImage)
   return api.post('/api/v1/users/nickname-setup', formData)
 }
+
+export function logout() {
+  return api.post('/api/v1/auth/logout')
+}
