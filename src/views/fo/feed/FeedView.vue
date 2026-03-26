@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, next } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { getFeed, reportPost } from '@/api/feed.js'
+import { getFriendList } from '@/api/friend.js'
 import './FeedView.css'
 
 const router = useRouter()
@@ -10,46 +11,55 @@ const router = useRouter()
 const currentUserId = 1
 
 // 전체 친구 목록 (실제로는 API에서 페이지 단위로 받아옴)
-const ALL_FRIENDS = Array.from({ length: 60 }, (_, i) => ({
-  id: i + 2,
-  nickname: `친구${String.fromCharCode(65 + (i % 26))}${i >= 26 ? Math.floor(i / 26) : ''}`,
-  profileImage: null,
-}))
+const visibleFriends = ref([])
+const isLoadingFriends = ref(false)
+const hasMoreFriends = ref([true])
+const nextCursorName = ref(null)
+const nextCursorId = ref(null)
 
-const PAGE_SIZE = 20
 const friendSearch = ref('')
 const friendListRef = ref(null)
 const friendSentinelRef = ref(null)
-const visibleFriends = ref(ALL_FRIENDS.slice(0, PAGE_SIZE))
 const filteredFriends = computed(() =>
   friendSearch.value.trim()
     ? visibleFriends.value.filter((f) => f.nickname.includes(friendSearch.value.trim()))
     : visibleFriends.value,
 )
-const isLoadingFriends = ref(false)
-const hasMoreFriends = ref(ALL_FRIENDS.length > PAGE_SIZE)
 
 let friendObserver = null
 
-function loadMoreFriends() {
+async function loadMoreFriends() {
+  // 이미 친구목록 로딩 중이거나 , 다음에 불러올 친구 목록이 없을 때 아무것도 안함
   if (isLoadingFriends.value || !hasMoreFriends.value) return
+
   isLoadingFriends.value = true
-  // 실제 구현 시 API 호출로 교체
-  setTimeout(() => {
-    const start = visibleFriends.value.length
-    const next = ALL_FRIENDS.slice(start, start + PAGE_SIZE)
-    if (next.length === 0) {
-      hasMoreFriends.value = false
-    } else {
-      visibleFriends.value.push(...next)
-      if (visibleFriends.value.length >= ALL_FRIENDS.length) hasMoreFriends.value = false
-    }
+
+  try {
+    const res = await getFriendList(nextCursorName.value, nextCursorId.value)
+    const { friends, hasNext, nextCursorId: nextId, nextCursorName: nextName } = res.data.data
+
+    visibleFriends.value.push(
+      ...friends.map((f) => ({
+        id: f.friend,
+        nickName: f.frieendId,
+        nickname: f.friendName,
+        profileImage: f.friendProfileImage,
+      })),
+    )
+
+    hasMoreFriends.value = hasNext
+    nextCursorId.value = nextId
+    nextCursorName.value = nextName
+  } catch (e) {
+    console.error('친구 목록 로딩 실패', e)
+  } finally {
     isLoadingFriends.value = false
-  }, 400)
+  }
 }
 
 onMounted(async () => {
   await loadFeed()
+  await loadMoreFriends()
 
   // 친구 목록
   if (!friendSentinelRef.value) return
@@ -60,6 +70,16 @@ onMounted(async () => {
     { root: friendListRef.value, threshold: 0.1 },
   )
   friendObserver.observe(friendSentinelRef.value)
+
+  if (friendSentinelRef.value) {
+    friendObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMoreFriends()
+      },
+      { root: friendListRef.value, threshold: 0.1 },
+    )
+    friendObserver.observe(friendSentinelRef.value)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -289,9 +309,7 @@ async function submitReport() {
       <!-- ② 가운데: 피드 -->
       <main class="feed-col">
         <!-- 피드 카드 목록 -->
-        <div v-if="posts.length === 0" class="feed-empty">
-          친구의 게시글이 없습니다
-        </div>
+        <div v-if="posts.length === 0" class="feed-empty">친구의 게시글이 없습니다</div>
         <div v-else class="feed-list">
           <article v-for="post in posts" :key="post.id" class="post-card">
             <!-- 카드 헤더 -->
@@ -557,4 +575,3 @@ async function submitReport() {
     </div>
   </div>
 </template>
-
