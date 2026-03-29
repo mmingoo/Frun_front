@@ -2,19 +2,12 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { getFeed, reportPost } from '@/api/feed.js'
+import { BASE_URL } from '@/api/index.js'
 import { getFriendList } from '@/api/friend.js'
-import { logout } from '@/api/auth.js'
-import { useAuthStore } from '@/stores/auth.js'
 import './FeedView.css'
+import NavBar from '@/components/NavBar.vue'
 
 const router = useRouter()
-const auth = useAuthStore()
-
-async function handleLogout() {
-  await logout()
-  auth.logout()
-  router.replace('/')
-}
 
 // ── 목 데이터 ──────────────────────────────────────────────
 const currentUserId = 1
@@ -141,7 +134,15 @@ async function loadFeed() {
     // posts 변수에 불러온 피드들 복사 (필드 정규화)
     const normalized = feeds.map((f) => ({
       ...f,
+      id: f.runningLogId,
+      authorId: f.userId,
       nickname: f.nickName ?? f.nickname ?? '',
+      profileImage: f.imageUrl ? `${BASE_URL}${f.imageUrl}` : null,
+      photos: (f.logImages ?? []).map((img) => `${BASE_URL}${img}`),
+      photoIndex: 0,
+      likeCount: f.likeCtn ?? 0,
+      commentCount: f.commentCtn ?? 0,
+      liked: false,
       createdAt: f.createdAt ? f.createdAt.slice(0, 16).replace('T', ' ') : '',
     }))
     posts.value.push(...normalized)
@@ -188,73 +189,7 @@ async function submitReport() {
 
 <template>
   <div class="page-wrap">
-    <!-- ── 네비게이션 바 ── -->
-    <header class="navbar">
-      <button class="nav-logo" @click="router.push('/feed')">
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#3b5bdb"
-          stroke-width="2.2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0" />
-          <path d="M7.5 15.5 9 11l3 2 2-5" />
-          <path d="M4 19l3.5-3.5" />
-        </svg>
-        <span class="nav-brand">Frun</span>
-      </button>
-      <div class="nav-actions">
-        <button class="nav-item active" @click="router.push('/feed')">홈</button>
-        <button class="nav-item" @click="router.push('/stats')">동계</button>
-        <button class="nav-item" @click="router.push('/friends')">친구</button>
-        <button class="nav-icon-btn" @click="router.push('/notifications')">
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-        </button>
-        <button class="nav-btn-my" @click="router.push('/mypage')">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          MY
-        </button>
-        <button class="nav-btn-my" @click="handleLogout">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          로그아웃
-        </button>
-      </div>
-    </header>
+    <NavBar />
 
     <!-- ── 3열 레이아웃 ── -->
     <div class="main-grid">
@@ -369,22 +304,32 @@ async function submitReport() {
             </div>
 
             <!-- 트래커 사진 -->
-            <div class="post-photo" @click="router.push(`/feed/${post.id}`)">
-              <img v-if="post.photo" :src="post.photo" alt="러닝 트래커 사진" />
-              <div v-else class="photo-placeholder">
-                <svg
-                  width="36"
-                  height="36"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#c4cad6"
-                  stroke-width="1.5"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="3" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
-                <span>[러닝 트래커 사진]</span>
+            <div v-if="post.photos.length" class="post-photo-wrap">
+              <div class="post-photo" @click="router.push(`/feed/${post.id}`)">
+                <div class="post-photo-inner">
+                  <img :src="post.photos[post.photoIndex]" alt="러닝 사진" />
+                </div>
+                <template v-if="post.photos.length > 1">
+                  <button
+                    v-if="post.photoIndex > 0"
+                    class="photo-nav photo-prev"
+                    @click.stop="post.photoIndex--"
+                  >‹</button>
+                  <button
+                    v-if="post.photoIndex < post.photos.length - 1"
+                    class="photo-nav photo-next"
+                    @click.stop="post.photoIndex++"
+                  >›</button>
+                  <div class="photo-dots">
+                    <span
+                      v-for="(_, i) in post.photos"
+                      :key="i"
+                      class="photo-dot"
+                      :class="{ active: i === post.photoIndex }"
+                      @click.stop="post.photoIndex = i"
+                    />
+                  </div>
+                </template>
               </div>
             </div>
 

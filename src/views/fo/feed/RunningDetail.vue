@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import NavBar from '@/components/NavBar.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -8,13 +9,15 @@ const route = useRoute()
 // ── 목 데이터 ──────────────────────────────────────────────
 const currentUserId = 1 // 로그인한 사용자 ID (mock)
 
+const photoIndex = ref(0)
+
 const post = ref({
   id: Number(route.params.id) || 1,
   authorId: 1,
   nickname: '러너_닉네임',
   profileImage: null,
   createdAt: '2026.04.10 06:30',
-  photo: null, // 러닝 트래커 사진 URL
+  photos: [], // 러닝 트래커 사진 URL 배열
   distance: 5.2,
   duration: 32,
   pace: "6'09\"",
@@ -170,34 +173,7 @@ function submitReport() {
 
 <template>
   <div class="page-wrap">
-    <!-- ── 네비게이션 바 ── -->
-    <header class="navbar">
-      <button class="nav-logo" @click="router.push('/feed')">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0"/>
-          <path d="M7.5 15.5 9 11l3 2 2-5"/>
-          <path d="M4 19l3.5-3.5"/>
-        </svg>
-        <span class="nav-brand">Frun</span>
-      </button>
-      <div class="nav-actions">
-        <button class="nav-btn" @click="router.push('/friends')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-          즐겨찾는 친구
-        </button>
-        <button class="nav-btn nav-my" @click="router.push('/mypage')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-          MY
-        </button>
-      </div>
-    </header>
+    <NavBar />
 
     <!-- ── 제목 ── -->
     <div class="page-title-bar">
@@ -237,15 +213,32 @@ function submitReport() {
         </div>
 
         <!-- 러닝 트래커 사진 -->
-        <div class="tracker-photo">
-          <img v-if="post.photo" :src="post.photo" alt="러닝 트래커 사진" />
-          <div v-else class="tracker-placeholder">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c4cad6" stroke-width="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="3"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
-            </svg>
-            <span>[러닝 트래커 사진]</span>
+        <div v-if="post.photos?.length" class="tracker-photo-wrap">
+          <div class="tracker-photo">
+            <div class="tracker-photo-inner">
+              <img :src="post.photos[photoIndex]" alt="러닝 사진" />
+            </div>
+            <template v-if="post.photos.length > 1">
+              <button
+                v-if="photoIndex > 0"
+                class="photo-nav photo-prev"
+                @click="photoIndex--"
+              >‹</button>
+              <button
+                v-if="photoIndex < post.photos.length - 1"
+                class="photo-nav photo-next"
+                @click="photoIndex++"
+              >›</button>
+              <div class="photo-dots">
+                <span
+                  v-for="(_, i) in post.photos"
+                  :key="i"
+                  class="photo-dot"
+                  :class="{ active: i === photoIndex }"
+                  @click="photoIndex = i"
+                />
+              </div>
+            </template>
           </div>
         </div>
 

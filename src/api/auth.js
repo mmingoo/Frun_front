@@ -18,6 +18,10 @@ export function setNickname(nickname, profileImage) {
   return api.post('/api/v1/users/nickname-setup', formData)
 }
 
+export function getMyProfile() {
+  return api.get('/api/v1/users/me')
+}
+
 export function logout() {
   return api.post('/api/v1/auth/logout')
 }

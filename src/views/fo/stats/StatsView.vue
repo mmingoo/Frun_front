@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import NavBar from '@/components/NavBar.vue'
 
 const router = useRouter()
 
@@ -276,58 +277,7 @@ const friendPanelTitle = computed(() => {
 
 <template>
   <div class="page-wrap">
-    <!-- ── 네비게이션 바 ── -->
-    <header class="navbar">
-      <button class="nav-logo" @click="router.push('/feed')">
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#3b5bdb"
-          stroke-width="2.2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0" />
-          <path d="M7.5 15.5 9 11l3 2 2-5" />
-          <path d="M4 19l3.5-3.5" />
-        </svg>
-        <span class="nav-brand">Frun</span>
-      </button>
-      <div class="nav-actions">
-        <button class="nav-item" @click="router.push('/feed')">홈</button>
-        <button class="nav-item active" @click="router.push('/stats')">동계</button>
-        <button class="nav-item" @click="router.push('/friends')">친구</button>
-        <button class="nav-icon-btn" @click="router.push('/notifications')">
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-        </button>
-        <button class="nav-btn-my" @click="router.push('/mypage')">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          MY
-        </button>
-      </div>
-    </header>
+    <NavBar />
 
     <!-- ── 메인 콘텐츠 ── -->
     <div class="main-wrap">

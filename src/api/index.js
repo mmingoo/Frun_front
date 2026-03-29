@@ -1,8 +1,10 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth.js'
 
+export const BASE_URL = 'http://localhost:8080'
+
 const api = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: BASE_URL,
   withCredentials: true, // refreshToken HttpOnly 쿠키 자동 전송
 })
 

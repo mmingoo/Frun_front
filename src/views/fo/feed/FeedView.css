@@ -4,102 +4,6 @@
   background: #f7f8fc;
 }
 
-/* ── 네비게이션 바 ── */
-.navbar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 28px;
-  height: 52px;
-  background: #fff;
-  border-bottom: 1px solid #edf0f7;
-}
-
-.nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-}
-
-.nav-brand {
-  font-size: 18px;
-  font-weight: 800;
-  color: #3b5bdb;
-  letter-spacing: -0.5px;
-}
-
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.nav-item {
-  padding: 6px 14px;
-  background: none;
-  border: none;
-  font-size: 14px;
-  font-weight: 500;
-  color: #718096;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.2s;
-}
-
-.nav-item:hover,
-.nav-item.active {
-  color: #3b5bdb;
-  background: #eef2ff;
-  font-weight: 600;
-}
-
-.nav-icon-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #718096;
-  border-radius: 8px;
-  transition: all 0.2s;
-  margin-left: 2px;
-}
-
-.nav-icon-btn:hover {
-  color: #3b5bdb;
-  background: #eef2ff;
-}
-
-.nav-btn-my {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  height: 34px;
-  padding: 0 14px;
-  background: #3b5bdb;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s;
-  margin-left: 4px;
-}
-
-.nav-btn-my:hover {
-  background: #2f4ac7;
-}
 
 /* ── 3열 그리드 ── */
 .main-grid {
@@ -387,35 +291,89 @@
 }
 
 /* 사진 영역 */
+.post-photo-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 4px 16px 8px;
+}
+
 .post-photo {
+  position: relative;
   width: 100%;
-  aspect-ratio: 16/9;
-  background: #f1f3f7;
+  max-width: 340px;
+  aspect-ratio: 4/5;
   cursor: pointer;
+  overflow: visible;
+}
+
+.post-photo-inner {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
+  border-radius: 10px;
+  background: #f1f3f7;
   transition: opacity 0.2s;
 }
 
-.post-photo:hover {
+.post-photo:hover .post-photo-inner {
   opacity: 0.92;
 }
 
-.post-photo img {
+.post-photo-inner img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.photo-placeholder {
-  width: 100%;
-  height: 100%;
+.photo-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  background: rgba(0, 0, 0, 0.35);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  color: #b0b9c8;
-  font-size: 12px;
+  z-index: 2;
+  padding: 0;
+  line-height: 1;
+  transition: background 0.2s;
+}
+
+.photo-nav:hover {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.photo-prev { left: -14px; }
+.photo-next { right: -14px; }
+
+.photo-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.photo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.photo-dot.active {
+  background: #fff;
 }
 
 /* 스탯 칩 */
