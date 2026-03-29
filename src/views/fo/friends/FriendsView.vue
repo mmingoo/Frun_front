@@ -1,7 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import NavBar from '@/components/NavBar.vue'
+import NavBar from '@/components/layout/NavBar.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
 
@@ -57,7 +59,6 @@ function openDeleteModal(id) {
 
 function confirmDelete() {
   friends.value = friends.value.filter((f) => f.id !== deleteTargetId.value)
-  showDeleteModal.value = false
 }
 </script>
 
@@ -93,11 +94,7 @@ function confirmDelete() {
         <ul v-else class="friend-list">
           <li v-for="user in searchResults" :key="user.id" class="friend-item">
             <div class="friend-avatar">
-              <img v-if="user.profileImage" :src="user.profileImage" :alt="user.nickname" />
-              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
+              <UserAvatar :src="user.profileImage" :alt="user.nickname" :size="20" />
             </div>
             <span class="friend-name">{{ user.nickname }}</span>
             <button v-if="!user.isFriend" class="btn-add" @click="addFriend(user)">친구 추가</button>
@@ -113,11 +110,7 @@ function confirmDelete() {
         <ul v-else class="friend-list">
           <li v-for="friend in filteredFriends" :key="friend.id" class="friend-item">
             <div class="friend-avatar">
-              <img v-if="friend.profileImage" :src="friend.profileImage" :alt="friend.nickname" />
-              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
+              <UserAvatar :src="friend.profileImage" :alt="friend.nickname" :size="20" />
             </div>
             <span class="friend-name" @click="router.push(`/mypage/${friend.id}`)">{{ friend.nickname }}</span>
             <button class="btn-delete" @click="openDeleteModal(friend.id)">친구 삭제</button>
@@ -127,18 +120,14 @@ function confirmDelete() {
     </div>
 
     <!-- ── 삭제 확인 모달 ── -->
-    <div v-if="showDeleteModal" class="modal-overlay" @click.self="showDeleteModal = false">
-      <div class="modal">
-        <h3 class="modal-title">친구 삭제</h3>
-        <p class="modal-desc">
-          <strong>{{ deleteTargetNickname }}</strong> 님을 친구 목록에서 삭제하시겠습니까?
-        </p>
-        <div class="modal-actions">
-          <button class="modal-btn modal-cancel" @click="showDeleteModal = false">취소</button>
-          <button class="modal-btn modal-confirm" @click="confirmDelete">삭제</button>
-        </div>
-      </div>
-    </div>
+    <ConfirmModal
+      v-model:show="showDeleteModal"
+      title="친구 삭제"
+      confirm-text="삭제"
+      @confirm="confirmDelete"
+    >
+      <strong>{{ deleteTargetNickname }}</strong> 님을 친구 목록에서 삭제하시겠습니까?
+    </ConfirmModal>
   </div>
 </template>
 

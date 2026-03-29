@@ -1,15 +1,16 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import NavBar from '@/components/NavBar.vue'
-
+import NavBar from '@/components/layout/NavBar.vue'
+import ReportModal from '@/components/common/ReportModal.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
+import PhotoCarousel from '@/components/feed/PhotoCarousel.vue'
 const router = useRouter()
 const route = useRoute()
 
 // ── 목 데이터 ──────────────────────────────────────────────
 const currentUserId = 1 // 로그인한 사용자 ID (mock)
-
-const photoIndex = ref(0)
 
 const post = ref({
   id: Number(route.params.id) || 1,
@@ -20,7 +21,7 @@ const post = ref({
   photos: [], // 러닝 트래커 사진 URL 배열
   distance: 5.2,
   duration: 32,
-  pace: "6'09\"",
+  pace: '6\'09"',
   memo: '오늘도 완주! 날씨가 좋아서 기분 좋았다 😊',
   likeCount: 24,
   liked: false,
@@ -64,7 +65,7 @@ const comments = ref([
 ])
 
 const totalCommentCount = computed(() =>
-  comments.value.reduce((sum, c) => sum + 1 + c.replies.length, 0)
+  comments.value.reduce((sum, c) => sum + 1 + c.replies.length, 0),
 )
 
 const isOwner = computed(() => post.value.authorId === currentUserId)
@@ -93,7 +94,6 @@ function handleDelete() {
 
 function confirmDelete() {
   // TODO: API 연동
-  showDeleteConfirm.value = false
   router.push('/feed')
 }
 
@@ -154,18 +154,13 @@ function submitReply(comment) {
 // ── 신고 ──────────────────────────────────────────────────
 const showReportModal = ref(false)
 const reportTarget = ref(null) // { type: 'post' | 'comment' | 'reply', id }
-const reportReason = ref('')
-const reportEtc = ref('')
 
 function openReport(type, id) {
   reportTarget.value = { type, id }
-  reportReason.value = ''
-  reportEtc.value = ''
   showReportModal.value = true
 }
 
-function submitReport() {
-  if (!reportReason.value) return
+function submitReport({ reason, etc }) {
   // TODO: API 연동
   showReportModal.value = false
 }
@@ -178,8 +173,16 @@ function submitReport() {
     <!-- ── 제목 ── -->
     <div class="page-title-bar">
       <button class="back-btn" @click="router.back()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-          <polyline points="15 18 9 12 15 6"/>
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+        >
+          <polyline points="15 18 9 12 15 6" />
         </svg>
       </button>
       <h1 class="page-title">러닝일지 상세</h1>
@@ -187,19 +190,13 @@ function submitReport() {
 
     <!-- ── 본문 ── -->
     <main class="content-grid">
-
       <!-- 왼쪽: 일지 본문 -->
       <section class="post-section">
-
         <!-- 작성자 정보 + 수정/삭제 -->
         <div class="post-header">
           <div class="author-info">
             <div class="avatar">
-              <img v-if="post.profileImage" :src="post.profileImage" :alt="post.nickname" />
-              <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
+              <UserAvatar :src="post.profileImage" :alt="post.nickname" :size="22" />
             </div>
             <div>
               <p class="author-name">{{ post.nickname }}</p>
@@ -213,34 +210,7 @@ function submitReport() {
         </div>
 
         <!-- 러닝 트래커 사진 -->
-        <div v-if="post.photos?.length" class="tracker-photo-wrap">
-          <div class="tracker-photo">
-            <div class="tracker-photo-inner">
-              <img :src="post.photos[photoIndex]" alt="러닝 사진" />
-            </div>
-            <template v-if="post.photos.length > 1">
-              <button
-                v-if="photoIndex > 0"
-                class="photo-nav photo-prev"
-                @click="photoIndex--"
-              >‹</button>
-              <button
-                v-if="photoIndex < post.photos.length - 1"
-                class="photo-nav photo-next"
-                @click="photoIndex++"
-              >›</button>
-              <div class="photo-dots">
-                <span
-                  v-for="(_, i) in post.photos"
-                  :key="i"
-                  class="photo-dot"
-                  :class="{ active: i === photoIndex }"
-                  @click="photoIndex = i"
-                />
-              </div>
-            </template>
-          </div>
-        </div>
+        <PhotoCarousel :photos="post.photos ?? []" />
 
         <!-- 러닝 스탯 -->
         <div class="stats-row">
@@ -266,16 +236,21 @@ function submitReport() {
         <!-- 좋아요 / 신고 -->
         <div class="post-footer">
           <button class="like-btn" :class="{ liked: post.liked }" @click="toggleLike">
-            <svg width="16" height="16" viewBox="0 0 24 24" :fill="post.liked ? '#e53e3e' : 'none'" stroke="#e53e3e" stroke-width="2">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              :fill="post.liked ? '#e53e3e' : 'none'"
+              stroke="#e53e3e"
+              stroke-width="2"
+            >
+              <path
+                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+              />
             </svg>
             좋아요 {{ post.likeCount }}개
           </button>
-          <button
-            v-if="!isOwner"
-            class="report-link"
-            @click="openReport('post', post.id)"
-          >
+          <button v-if="!isOwner" class="report-link" @click="openReport('post', post.id)">
             신고
           </button>
         </div>
@@ -287,15 +262,10 @@ function submitReport() {
 
         <div class="comment-list">
           <div v-for="comment in comments" :key="comment.id" class="comment-block">
-
             <!-- 댓글 -->
             <div class="comment-item">
               <div class="comment-avatar">
-                <img v-if="comment.profileImage" :src="comment.profileImage" :alt="comment.nickname" />
-                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
+                <UserAvatar :src="comment.profileImage" :alt="comment.nickname" :size="16" />
               </div>
               <div class="comment-body">
                 <div class="comment-meta">
@@ -309,12 +279,16 @@ function submitReport() {
                     v-if="comment.authorId !== currentUserId && !isOwner"
                     class="text-btn text-btn-report"
                     @click="openReport('comment', comment.id)"
-                  >신고</button>
+                  >
+                    신고
+                  </button>
                   <button
                     v-if="comment.authorId === currentUserId"
                     class="text-btn text-btn-delete"
                     @click="deleteComment(comment.id)"
-                  >삭제</button>
+                  >
+                    삭제
+                  </button>
                 </div>
               </div>
             </div>
@@ -336,11 +310,7 @@ function submitReport() {
             <div v-if="comment.replies.length > 0" class="reply-list">
               <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
                 <div class="comment-avatar reply-avatar">
-                  <img v-if="reply.profileImage" :src="reply.profileImage" :alt="reply.nickname" />
-                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
+                  <UserAvatar :src="reply.profileImage" :alt="reply.nickname" :size="14" />
                 </div>
                 <div class="comment-body">
                   <div class="comment-meta">
@@ -353,12 +323,16 @@ function submitReport() {
                       v-if="reply.authorId !== currentUserId && !isOwner"
                       class="text-btn text-btn-report"
                       @click="openReport('reply', reply.id)"
-                    >신고</button>
+                    >
+                      신고
+                    </button>
                     <button
                       v-if="reply.authorId === currentUserId"
                       class="text-btn text-btn-delete"
                       @click="deleteReply(comment.id, reply.id)"
-                    >삭제</button>
+                    >
+                      삭제
+                    </button>
                   </div>
                 </div>
               </div>
@@ -377,51 +351,24 @@ function submitReport() {
             maxlength="250"
             @keyup.enter="submitComment"
           />
-          <button class="comment-submit-btn" :disabled="!newComment.trim()" @click="submitComment">등록</button>
+          <button class="comment-submit-btn" :disabled="!newComment.trim()" @click="submitComment">
+            등록
+          </button>
         </div>
       </section>
     </main>
 
     <!-- ── 삭제 확인 모달 ── -->
-    <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
-      <div class="modal">
-        <h3 class="modal-title">일지를 삭제하시겠어요?</h3>
-        <p class="modal-desc">삭제된 일지는 복구할 수 없습니다.</p>
-        <div class="modal-actions">
-          <button class="modal-btn modal-cancel" @click="showDeleteConfirm = false">취소</button>
-          <button class="modal-btn modal-confirm" @click="confirmDelete">삭제</button>
-        </div>
-      </div>
-    </div>
+    <ConfirmModal
+      v-model:show="showDeleteConfirm"
+      title="일지를 삭제하시겠어요?"
+      description="삭제된 일지는 복구할 수 없습니다."
+      confirm-text="삭제"
+      @confirm="confirmDelete"
+    />
 
     <!-- ── 신고 모달 ── -->
-    <div v-if="showReportModal" class="modal-overlay" @click.self="showReportModal = false">
-      <div class="modal">
-        <h3 class="modal-title">신고 사유 선택</h3>
-        <div class="report-options">
-          <label class="report-option">
-            <input v-model="reportReason" type="radio" value="inappropriate" />
-            부적절한 콘텐츠
-          </label>
-          <label class="report-option">
-            <input v-model="reportReason" type="radio" value="etc" />
-            기타
-          </label>
-        </div>
-        <textarea
-          v-if="reportReason === 'etc'"
-          v-model="reportEtc"
-          placeholder="신고 사유를 입력하세요."
-          class="report-textarea"
-          maxlength="200"
-          rows="3"
-        />
-        <div class="modal-actions">
-          <button class="modal-btn modal-cancel" @click="showReportModal = false">취소</button>
-          <button class="modal-btn modal-confirm" :disabled="!reportReason" @click="submitReport">신고</button>
-        </div>
-      </div>
-    </div>
+    <ReportModal v-model:show="showReportModal" @submit="submitReport" />
   </div>
 </template>
 

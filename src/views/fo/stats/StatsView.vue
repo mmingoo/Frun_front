@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import NavBar from '@/components/NavBar.vue'
+import NavBar from '@/components/layout/NavBar.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
 
@@ -484,19 +485,7 @@ const friendPanelTitle = computed(() => {
           <ul class="friends-list">
             <li v-for="friend in visibleFriends" :key="friend.id" class="friends-item">
               <div class="friend-avatar">
-                <img v-if="friend.profileImage" :src="friend.profileImage" :alt="friend.nickname" />
-                <svg
-                  v-else
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#94a3b8"
-                  stroke-width="1.8"
-                >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
+                <UserAvatar :src="friend.profileImage" :alt="friend.nickname" :size="12" />
               </div>
               <span class="friend-name">{{ friend.nickname }}</span>
             </li>

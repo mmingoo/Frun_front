@@ -5,7 +5,10 @@ import { getFeed, reportPost } from '@/api/feed.js'
 import { BASE_URL } from '@/api/index.js'
 import { getFriendList } from '@/api/friend.js'
 import './FeedView.css'
-import NavBar from '@/components/NavBar.vue'
+import NavBar from '@/components/layout/NavBar.vue'
+import FeedPostCard from '@/components/feed/FeedPostCard.vue'
+import ReportModal from '@/components/common/ReportModal.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
 
@@ -15,7 +18,7 @@ const currentUserId = 1
 // 전체 친구 목록 (실제로는 API에서 페이지 단위로 받아옴)
 const visibleFriends = ref([])
 const isLoadingFriends = ref(false)
-const hasMoreFriends = ref([true])
+const hasMoreFriends = ref(true)
 const nextCursorName = ref(null)
 const nextCursorId = ref(null)
 
@@ -42,8 +45,7 @@ async function loadMoreFriends() {
 
     visibleFriends.value.push(
       ...friends.map((f) => ({
-        id: f.friend,
-        nickName: f.frieendId,
+        id: f.friendId,
         nickname: f.friendName,
         profileImage: f.friendProfileImage,
       })),
@@ -64,15 +66,6 @@ onMounted(async () => {
   await loadMoreFriends()
 
   // 친구 목록
-  if (!friendSentinelRef.value) return
-  friendObserver = new IntersectionObserver(
-    (entries) => {
-      if (entries[0].isIntersecting) loadMoreFriends()
-    },
-    { root: friendListRef.value, threshold: 0.1 },
-  )
-  friendObserver.observe(friendSentinelRef.value)
-
   if (friendSentinelRef.value) {
     friendObserver = new IntersectionObserver(
       (entries) => {
@@ -139,6 +132,7 @@ async function loadFeed() {
       nickname: f.nickName ?? f.nickname ?? '',
       profileImage: f.imageUrl ? `${BASE_URL}${f.imageUrl}` : null,
       photos: (f.logImages ?? []).map((img) => `${BASE_URL}${img}`),
+      photo: f.logImages?.[0] ? `${BASE_URL}${f.logImages[0]}` : null,
       photoIndex: 0,
       likeCount: f.likeCtn ?? 0,
       commentCount: f.commentCtn ?? 0,
@@ -170,19 +164,14 @@ function toggleLike(post) {
 // ── 신고 ──────────────────────────────────────────────────
 const showReportModal = ref(false)
 const reportPostId = ref(null)
-const reportReason = ref('')
-const reportEtc = ref('')
 
 function openReport(postId) {
   reportPostId.value = postId
-  reportReason.value = ''
-  reportEtc.value = ''
   showReportModal.value = true
 }
 
-async function submitReport() {
-  if (!reportReason.value) return
-  await reportPost(reportPostId.value, reportReason.value, reportEtc.value)
+async function submitReport({ reason, etc }) {
+  await reportPost(reportPostId.value, reason, etc)
   showReportModal.value = false
 }
 </script>
@@ -225,19 +214,7 @@ async function submitReport() {
               @click="router.push(`/mypage/${friend.id}`)"
             >
               <div class="friend-avatar">
-                <img v-if="friend.profileImage" :src="friend.profileImage" :alt="friend.nickname" />
-                <svg
-                  v-else
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#94a3b8"
-                  stroke-width="1.8"
-                >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
+                <UserAvatar :src="friend.profileImage" :alt="friend.nickname" :size="15" />
               </div>
               <span class="friend-name">{{ friend.nickname }}</span>
             </li>
@@ -270,148 +247,14 @@ async function submitReport() {
         <!-- 피드 카드 목록 -->
         <div v-if="posts.length === 0" class="feed-empty">친구의 게시글이 없습니다</div>
         <div v-else class="feed-list">
-          <article v-for="post in posts" :key="post.id" class="post-card">
-            <!-- 카드 헤더 -->
-            <div class="post-header">
-              <div class="author-row">
-                <div class="avatar">
-                  <img v-if="post.profileImage" :src="post.profileImage" :alt="post.nickname" />
-                  <svg
-                    v-else
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#94a3b8"
-                    stroke-width="1.8"
-                  >
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </div>
-                <div>
-                  <p class="author-name">{{ post.nickname }}</p>
-                  <p class="post-date">{{ post.createdAt }}</p>
-                </div>
-              </div>
-              <button
-                v-if="post.authorId !== currentUserId"
-                class="report-btn"
-                @click="openReport(post.id)"
-              >
-                신고
-              </button>
-            </div>
-
-            <!-- 트래커 사진 -->
-            <div v-if="post.photos.length" class="post-photo-wrap">
-              <div class="post-photo" @click="router.push(`/feed/${post.id}`)">
-                <div class="post-photo-inner">
-                  <img :src="post.photos[post.photoIndex]" alt="러닝 사진" />
-                </div>
-                <template v-if="post.photos.length > 1">
-                  <button
-                    v-if="post.photoIndex > 0"
-                    class="photo-nav photo-prev"
-                    @click.stop="post.photoIndex--"
-                  >‹</button>
-                  <button
-                    v-if="post.photoIndex < post.photos.length - 1"
-                    class="photo-nav photo-next"
-                    @click.stop="post.photoIndex++"
-                  >›</button>
-                  <div class="photo-dots">
-                    <span
-                      v-for="(_, i) in post.photos"
-                      :key="i"
-                      class="photo-dot"
-                      :class="{ active: i === post.photoIndex }"
-                      @click.stop="post.photoIndex = i"
-                    />
-                  </div>
-                </template>
-              </div>
-            </div>
-
-            <!-- 스탯 (있을 때만) -->
-            <div v-if="post.distance" class="post-stats">
-              <span class="stat-chip">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#3b5bdb"
-                  stroke-width="2.2"
-                >
-                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                </svg>
-                {{ post.distance }}km
-              </span>
-              <span class="stat-chip">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#3b5bdb"
-                  stroke-width="2.2"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-                {{ post.duration }}분
-              </span>
-              <span class="stat-chip">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#3b5bdb"
-                  stroke-width="2.2"
-                >
-                  <path d="M3 12h18M3 6h18M3 18h18" />
-                </svg>
-                페이스 {{ post.pace }}
-              </span>
-            </div>
-
-            <!-- 메모 -->
-            <p v-if="post.memo" class="post-memo">{{ post.memo }}</p>
-
-            <!-- 좋아요 / 댓글 -->
-            <div class="post-footer">
-              <button class="like-btn" :class="{ liked: post.liked }" @click="toggleLike(post)">
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  :fill="post.liked ? '#e53e3e' : 'none'"
-                  stroke="#e53e3e"
-                  stroke-width="2"
-                >
-                  <path
-                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                  />
-                </svg>
-                좋아요 {{ post.likeCount }}개
-              </button>
-              <button class="comment-link" @click="router.push(`/feed/${post.id}`)">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-                댓글 {{ post.commentCount }}개
-              </button>
-            </div>
-          </article>
+          <FeedPostCard
+            v-for="post in posts"
+            :key="post.id"
+            :post="post"
+            :current-user-id="currentUserId"
+            @like="toggleLike"
+            @report="openReport"
+          />
         </div>
       </main>
 
@@ -513,34 +356,6 @@ async function submitReport() {
     </div>
 
     <!-- ── 신고 모달 ── -->
-    <div v-if="showReportModal" class="modal-overlay" @click.self="showReportModal = false">
-      <div class="modal">
-        <h3 class="modal-title">신고 사유 선택</h3>
-        <div class="report-options">
-          <label class="report-option">
-            <input v-model="reportReason" type="radio" value="inappropriate" />
-            부적절한 콘텐츠
-          </label>
-          <label class="report-option">
-            <input v-model="reportReason" type="radio" value="etc" />
-            기타
-          </label>
-        </div>
-        <textarea
-          v-if="reportReason === 'etc'"
-          v-model="reportEtc"
-          placeholder="신고 사유를 입력하세요."
-          class="report-textarea"
-          maxlength="200"
-          rows="3"
-        />
-        <div class="modal-actions">
-          <button class="modal-btn modal-cancel" @click="showReportModal = false">취소</button>
-          <button class="modal-btn modal-confirm" :disabled="!reportReason" @click="submitReport">
-            신고
-          </button>
-        </div>
-      </div>
-    </div>
+    <ReportModal v-model:show="showReportModal" @submit="submitReport" />
   </div>
 </template>

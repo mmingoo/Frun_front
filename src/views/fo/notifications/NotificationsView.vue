@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import NavBar from '@/components/NavBar.vue'
+import NavBar from '@/components/layout/NavBar.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
 
@@ -123,11 +124,7 @@ function markAllRead() {
           <!-- 아바타 + 타입 점 -->
           <div class="noti-avatar-wrap">
             <div class="noti-avatar">
-              <img v-if="noti.profileImage" :src="noti.profileImage" :alt="noti.fromNickname" />
-              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
+              <UserAvatar :src="noti.profileImage" :alt="noti.fromNickname" :size="20" />
             </div>
             <span class="type-dot" :style="{ background: typeColor[noti.type] }" />
           </div>

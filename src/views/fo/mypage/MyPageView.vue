@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import NavBar from '@/components/NavBar.vue'
+import NavBar from '@/components/layout/NavBar.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -79,11 +80,7 @@ function toggleFriend() {
       <div class="profile-header">
         <!-- 아바타 -->
         <div class="avatar-lg">
-          <img v-if="profile.profileImage" :src="profile.profileImage" :alt="profile.nickname" />
-          <svg v-else width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.4">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
+          <UserAvatar :src="profile.profileImage" :alt="profile.nickname" :size="44" />
         </div>
 
         <!-- 오른쪽 정보 -->
