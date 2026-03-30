@@ -1,77 +1,20 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getFeed, reportPost } from '@/api/feed.js'
 import { BASE_URL } from '@/api/index.js'
-import { getFriendList } from '@/api/friend.js'
 import './FeedView.css'
 import NavBar from '@/components/layout/NavBar.vue'
 import FeedPostCard from '@/components/feed/FeedPostCard.vue'
 import ReportModal from '@/components/common/ReportModal.vue'
-import UserAvatar from '@/components/common/UserAvatar.vue'
+import FriendSidebar from '@/components/layout/FriendSidebar.vue'
 
 const router = useRouter()
 
 const currentUserId = 1
 
-// ── 친구 목록 ─────────────────────────────────────────────
-const visibleFriends = ref([])
-const isLoadingFriends = ref(false)
-const hasMoreFriends = ref(true)
-const nextCursorName = ref(null)
-const nextCursorId = ref(null)
-
-const friendSearch = ref('')
-const friendListRef = ref(null)
-const friendSentinelRef = ref(null)
-const filteredFriends = computed(() =>
-  friendSearch.value.trim()
-    ? visibleFriends.value.filter((f) => f.nickname.includes(friendSearch.value.trim()))
-    : visibleFriends.value,
-)
-
-let friendObserver = null
-
-async function loadMoreFriends() {
-  if (isLoadingFriends.value || !hasMoreFriends.value) return
-  isLoadingFriends.value = true
-  try {
-    const res = await getFriendList(nextCursorName.value, nextCursorId.value)
-    const { friends, hasNext, nextCursorId: nextId, nextCursorName: nextName } = res.data.data
-    visibleFriends.value.push(
-      ...friends.map((f) => ({
-        id: f.friendId,
-        nickname: f.friendName,
-        profileImage: f.friendProfileImage,
-      })),
-    )
-    hasMoreFriends.value = hasNext
-    nextCursorId.value = nextId
-    nextCursorName.value = nextName
-  } catch (e) {
-    console.error('친구 목록 로딩 실패', e)
-  } finally {
-    isLoadingFriends.value = false
-  }
-}
-
 onMounted(async () => {
   await loadFeed()
-  await loadMoreFriends()
-
-  if (friendSentinelRef.value) {
-    friendObserver = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMoreFriends()
-      },
-      { root: friendListRef.value, threshold: 0.1 },
-    )
-    friendObserver.observe(friendSentinelRef.value)
-  }
-})
-
-onBeforeUnmount(() => {
-  friendObserver?.disconnect()
 })
 
 // ── 공지사항 ──────────────────────────────────────────────
@@ -99,8 +42,9 @@ async function loadFeed() {
     const { feeds, hasNext: next, nextCursorId } = res.data.data
     const normalized = feeds.map((f) => ({
       ...f,
+
       id: f.runningLogId,
-      authorId: f.authorId,
+      authorId: f.userId,
       nickname: f.nickName ?? f.nickname ?? '',
       profileImage: f.imageUrl ? `${BASE_URL}${f.imageUrl}` : null,
       photos: (f.logImages ?? []).map((img) => `${BASE_URL}${img}`),
@@ -158,63 +102,7 @@ async function submitReport({ reason, etc }) {
     <!-- ── 3열 레이아웃 ── -->
     <div class="main-grid">
       <!-- ① 왼쪽: 친구 목록 -->
-      <aside class="sidebar-left">
-        <div class="sidebar-card">
-          <h2 class="sidebar-title">친구 목록</h2>
-          <div class="friend-search-wrap">
-            <svg
-              class="friend-search-icon"
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              v-model="friendSearch"
-              type="text"
-              class="friend-search-input"
-              placeholder="친구 검색"
-            />
-          </div>
-          <ul ref="friendListRef" class="friend-list">
-            <li
-              v-for="friend in filteredFriends"
-              :key="friend.id"
-              class="friend-item"
-              @click="router.push(`/mypage/${friend.id}`)"
-            >
-              <div class="friend-avatar">
-                <UserAvatar :src="friend.profileImage" :alt="friend.nickname" :size="15" />
-              </div>
-              <span class="friend-name">{{ friend.nickname }}</span>
-            </li>
-            <li ref="friendSentinelRef" class="friend-sentinel">
-              <span v-if="isLoadingFriends" class="friend-loading">불러오는 중…</span>
-            </li>
-          </ul>
-          <button class="friend-add-btn" @click="router.push('/friends')">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="8.5" cy="7" r="4" />
-              <line x1="20" y1="8" x2="20" y2="14" />
-              <line x1="23" y1="11" x2="17" y2="11" />
-            </svg>
-            친구 추가
-          </button>
-        </div>
-      </aside>
+      <FriendSidebar />
 
       <!-- ② 가운데: 피드 -->
       <main class="feed-col">

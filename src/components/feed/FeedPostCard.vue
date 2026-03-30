@@ -258,7 +258,7 @@ function next(postId, length) {
 
 /* ── 메모 ── */
 .memo {
-  padding: 6px 16px 4px;
+  padding: 6px 16px 4px 24px;
   font-size: 13px;
   color: #4a5568;
   line-height: 1.55;

@@ -186,9 +186,6 @@ function toggleFriend() {
           </div>
         </div>
 
-        <!-- ── 구분선 ── -->
-        <div class="divider" />
-
         <!-- ── 게시물 그리드 ── -->
         <div v-if="posts.length === 0" class="empty-wrap">
           <svg
