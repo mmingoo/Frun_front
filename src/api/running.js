@@ -19,3 +19,15 @@ export function createRunning({
   photos.forEach((photo) => formData.append('images', photo.file))
   return api.post('/api/v1/running-logs', formData)
 }
+
+export function getMyRunningLogs(cursorId, size = 12) {
+  return api.get('api/v1/running-logs/my', {
+    params: { cursorId, size },
+  })
+}
+
+export function getFriendRunningLogs(userId, cursorId, size = 12) {
+  return api.get(`api/v1/running-logs/user/${userId}`, {
+    params: { cursorId, size },
+  })
+}

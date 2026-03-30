@@ -13,3 +13,7 @@ export function getFeed(cursorId, size = 10) {
     params: { cursorId, size },
   })
 }
+
+export function getRunningLogDetail(runningLogId, authorId) {
+  return api.get(`/api/v1/running-logs/${runningLogId}/${authorId}`)
+}

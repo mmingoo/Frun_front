@@ -12,10 +12,9 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
 
-// ── 목 데이터 ──────────────────────────────────────────────
 const currentUserId = 1
 
-// 전체 친구 목록 (실제로는 API에서 페이지 단위로 받아옴)
+// ── 친구 목록 ─────────────────────────────────────────────
 const visibleFriends = ref([])
 const isLoadingFriends = ref(false)
 const hasMoreFriends = ref(true)
@@ -34,15 +33,11 @@ const filteredFriends = computed(() =>
 let friendObserver = null
 
 async function loadMoreFriends() {
-  // 이미 친구목록 로딩 중이거나 , 다음에 불러올 친구 목록이 없을 때 아무것도 안함
   if (isLoadingFriends.value || !hasMoreFriends.value) return
-
   isLoadingFriends.value = true
-
   try {
     const res = await getFriendList(nextCursorName.value, nextCursorId.value)
     const { friends, hasNext, nextCursorId: nextId, nextCursorName: nextName } = res.data.data
-
     visibleFriends.value.push(
       ...friends.map((f) => ({
         id: f.friendId,
@@ -50,7 +45,6 @@ async function loadMoreFriends() {
         profileImage: f.friendProfileImage,
       })),
     )
-
     hasMoreFriends.value = hasNext
     nextCursorId.value = nextId
     nextCursorName.value = nextName
@@ -65,7 +59,6 @@ onMounted(async () => {
   await loadFeed()
   await loadMoreFriends()
 
-  // 친구 목록
   if (friendSentinelRef.value) {
     friendObserver = new IntersectionObserver(
       (entries) => {
@@ -81,24 +74,9 @@ onBeforeUnmount(() => {
   friendObserver?.disconnect()
 })
 
-const myStats = ref({
-  week: { distance: 23.5, count: 4, pace: '6\'02"' },
-  month: { distance: 23.5, count: 4, pace: '6\'02"' },
-})
-
-const notices = ref([
-  { id: 1, title: '[공지] 서비스 이용 안내' },
-  { id: 2, title: '[공지] 친구 기능 업데이트 안내' },
-  { id: 3, title: '[공지] 개인정보 처리방침 변경 안내' },
-  { id: 4, title: '[공지] 앱 점검 일정 안내' },
-  { id: 5, title: '[공지] 이벤트: 5월 러닝 챌린지' },
-  { id: 6, title: '[공지] 신규 기능 업데이트 안내' },
-  { id: 7, title: '[공지] 커뮤니티 이용 규칙 안내' },
-  { id: 8, title: '[공지] 서버 점검 완료 안내' },
-  { id: 9, title: '[공지] 여름 러닝 이벤트 안내' },
-  { id: 10, title: '[공지] 닉네임 변경 정책 안내' },
-])
-
+// ── 공지사항 ──────────────────────────────────────────────
+const myStats = ref({})
+const notices = ref([])
 const NOTICE_PAGE_SIZE = 5
 const noticePage = ref(1)
 const noticeTotalPages = computed(() => Math.ceil(notices.value.length / NOTICE_PAGE_SIZE))
@@ -107,28 +85,22 @@ const pagedNotices = computed(() => {
   return notices.value.slice(start, start + NOTICE_PAGE_SIZE)
 })
 
-const posts = ref([]) // 피드 목록
-const cursorId = ref(null) // 다음 요청용 커서
-const hasNext = ref(true) // 다음 페이지 존재 여부
-const isFeedLoading = ref(false) // 로딩 상태
+// ── 피드 ─────────────────────────────────────────────────
+const posts = ref([])
+const cursorId = ref(null)
+const hasNext = ref(true)
+const isFeedLoading = ref(false)
 
 async function loadFeed() {
-  //이미 로딩 중이거나 다음에 불러올 데이터가 없는 경우 중단
   if (isFeedLoading.value || !hasNext.value) return
-
-  // 로딩 시작 표시, 스피너 보여주기 위해
   isFeedLoading.value = true
   try {
     const res = await getFeed(cursorId.value)
-
-    // 요청 받아온 백엔드 데이터들 할당
     const { feeds, hasNext: next, nextCursorId } = res.data.data
-
-    // posts 변수에 불러온 피드들 복사 (필드 정규화)
     const normalized = feeds.map((f) => ({
       ...f,
       id: f.runningLogId,
-      authorId: f.userId,
+      authorId: f.authorId,
       nickname: f.nickName ?? f.nickname ?? '',
       profileImage: f.imageUrl ? `${BASE_URL}${f.imageUrl}` : null,
       photos: (f.logImages ?? []).map((img) => `${BASE_URL}${img}`),
@@ -140,7 +112,6 @@ async function loadFeed() {
       createdAt: f.createdAt ? f.createdAt.slice(0, 16).replace('T', ' ') : '',
     }))
     posts.value.push(...normalized)
-
     hasNext.value = next
     cursorId.value = nextCursorId
   } catch (e) {
@@ -148,6 +119,10 @@ async function loadFeed() {
   } finally {
     isFeedLoading.value = false
   }
+}
+
+function goToDetail(post) {
+  router.push(`/feed/${post.id}/${post.authorId}`)
 }
 
 // ── 좋아요 ────────────────────────────────────────────────
@@ -218,7 +193,6 @@ async function submitReport({ reason, etc }) {
               </div>
               <span class="friend-name">{{ friend.nickname }}</span>
             </li>
-            <!-- 무한 스크롤 센티널 -->
             <li ref="friendSentinelRef" class="friend-sentinel">
               <span v-if="isLoadingFriends" class="friend-loading">불러오는 중…</span>
             </li>
@@ -244,7 +218,6 @@ async function submitReport({ reason, etc }) {
 
       <!-- ② 가운데: 피드 -->
       <main class="feed-col">
-        <!-- 피드 카드 목록 -->
         <div v-if="posts.length === 0" class="feed-empty">친구의 게시글이 없습니다</div>
         <div v-else class="feed-list">
           <FeedPostCard
@@ -254,6 +227,7 @@ async function submitReport({ reason, etc }) {
             :current-user-id="currentUserId"
             @like="toggleLike"
             @report="openReport"
+            @detail="goToDetail"
           />
         </div>
       </main>
@@ -269,15 +243,15 @@ async function submitReport({ reason, etc }) {
           <div class="stats-grid">
             <div class="stats-item">
               <span class="stats-label">총 거리</span>
-              <span class="stats-value">{{ myStats.week.distance }} km</span>
+              <span class="stats-value">{{ myStats.week?.distance }} km</span>
             </div>
             <div class="stats-item">
               <span class="stats-label">러닝 횟수</span>
-              <span class="stats-value">{{ myStats.week.count }}회</span>
+              <span class="stats-value">{{ myStats.week?.count }}회</span>
             </div>
             <div class="stats-item">
               <span class="stats-label">평균 페이스</span>
-              <span class="stats-value">{{ myStats.week.pace }}</span>
+              <span class="stats-value">{{ myStats.week?.pace }}</span>
             </div>
           </div>
 
@@ -289,15 +263,15 @@ async function submitReport({ reason, etc }) {
           <div class="stats-grid">
             <div class="stats-item">
               <span class="stats-label">총 거리</span>
-              <span class="stats-value highlight">{{ myStats.month.distance }} km</span>
+              <span class="stats-value highlight">{{ myStats.month?.distance }} km</span>
             </div>
             <div class="stats-item">
               <span class="stats-label">러닝 횟수</span>
-              <span class="stats-value">{{ myStats.month.count }}회</span>
+              <span class="stats-value">{{ myStats.month?.count }}회</span>
             </div>
             <div class="stats-item">
               <span class="stats-label">평균 페이스</span>
-              <span class="stats-value">{{ myStats.month.pace }}</span>
+              <span class="stats-value">{{ myStats.month?.pace }}</span>
             </div>
           </div>
         </div>

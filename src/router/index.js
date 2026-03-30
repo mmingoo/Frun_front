@@ -35,7 +35,7 @@ const router = createRouter({
       component: WriteRunning,
     },
     {
-      path: '/feed/:id',
+      path: '/feed/:runningLogId/:authorId',
       name: 'RunningDetail',
       component: RunningDetail,
     },

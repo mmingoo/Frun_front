@@ -10,9 +10,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 20px 24px 12px;
+  padding: 20px 0 12px;
 }
 
 .back-btn {
@@ -40,14 +38,23 @@
   margin: 0;
 }
 
+/* ── 사이드바 + 본문 외부 그리드 ── */
+.page-outer-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  align-items: start;
+}
+
 /* ── 2열 그리드 ── */
 .content-grid {
   display: grid;
   grid-template-columns: 1fr 360px;
   gap: 20px;
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 0 24px 60px;
+  padding: 0 0 60px;
   align-items: start;
 }
 
@@ -111,32 +118,25 @@
 }
 
 .action-btn {
-  padding: 6px 14px;
-  border-radius: 8px;
+  background: none;
+  border: none;
+  padding: 0;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: opacity 0.2s;
+}
+
+.action-btn:hover {
+  opacity: 0.7;
 }
 
 .btn-edit {
-  background: #eef2ff;
-  border: 1.5px solid #c5d0f5;
   color: #3b5bdb;
 }
 
-.btn-edit:hover {
-  background: #dde5ff;
-}
-
 .btn-delete {
-  background: #fff5f5;
-  border: 1.5px solid #fed7d7;
   color: #e53e3e;
-}
-
-.btn-delete:hover {
-  background: #ffe0e0;
 }
 
 
@@ -219,15 +219,15 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e53e3e;
   padding: 0;
-  text-decoration: underline;
-  transition: color 0.2s;
+  transition: opacity 0.2s;
 }
 
 .report-link:hover {
-  color: #e53e3e;
+  opacity: 0.7;
 }
 
 /* ── 댓글 섹션 ── */
@@ -461,26 +461,30 @@
 }
 
 /* ── 반응형 ── */
+@media (max-width: 900px) {
+  .page-outer-grid {
+    grid-template-columns: 1fr;
+  }
+  .page-outer-grid > aside {
+    display: none;
+  }
+}
+
 @media (max-width: 720px) {
+  .page-outer-grid {
+    padding: 0 16px;
+  }
+
   .content-grid {
     grid-template-columns: 1fr;
-    padding: 0 16px 40px;
+    padding: 0 0 40px;
   }
 
   .page-title-bar {
-    padding: 16px 16px 10px;
+    padding: 16px 0 10px;
   }
 
   .comment-list {
     max-height: 340px;
-  }
-
-  .navbar {
-    padding: 0 16px;
-  }
-
-  .nav-btn {
-    font-size: 12px;
-    padding: 5px 10px;
   }
 }

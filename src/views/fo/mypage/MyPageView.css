@@ -1,14 +1,33 @@
 .page-wrap {
   min-height: 100vh;
-  background: #fff;
+  background: #f7f8fc;
 }
 
 
+/* ── 페이지 그리드 ── */
+.page-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+  align-items: start;
+}
+
 /* ── 메인 ── */
 .main-wrap {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 36px 24px 60px;
+  min-width: 0;
+  padding: 12px 4px 0;
+}
+
+/* ── 프로필 박스 ── */
+.profile-box {
+  background: #fff;
+  border: 1px solid #edf0f7;
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  margin-bottom: 20px;
 }
 
 /* ── 프로필 헤더 ── */
@@ -16,7 +35,6 @@
   display: flex;
   align-items: flex-start;
   gap: 48px;
-  margin-bottom: 32px;
 }
 
 .avatar-lg {
@@ -314,11 +332,19 @@
 .modal-confirm:disabled { background: #a0aec0; cursor: not-allowed; }
 
 /* ── 반응형 ── */
+@media (max-width: 860px) {
+  .page-grid {
+    grid-template-columns: 1fr;
+  }
+  .page-grid > aside {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .profile-header { gap: 24px; }
   .avatar-lg { width: 80px; height: 80px; }
   .profile-nickname { font-size: 18px; }
   .profile-counts { gap: 20px; }
-  .main-wrap { padding: 24px 16px 48px; }
   .navbar { padding: 0 16px; }
 }
