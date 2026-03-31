@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getFeed, reportPost } from '@/api/feed.js'
+import { addLike, cancelLike, getFeed, reportPost } from '@/api/feed.js'
 import { BASE_URL } from '@/api/index.js'
 import './FeedView.css'
 import NavBar from '@/components/layout/NavBar.vue'
@@ -11,7 +11,7 @@ import FriendSidebar from '@/components/layout/FriendSidebar.vue'
 
 const router = useRouter()
 
-const currentUserId = 1
+const currentUserId = ref([])
 
 onMounted(async () => {
   await loadFeed()
@@ -52,7 +52,7 @@ async function loadFeed() {
       photoIndex: 0,
       likeCount: f.likeCtn ?? 0,
       commentCount: f.commentCtn ?? 0,
-      liked: false,
+      liked: f.liked,
       createdAt: f.createdAt ? f.createdAt.slice(0, 16).replace('T', ' ') : '',
       runDate: f.runDate ?? null,
       runTime: f.runTime ? f.runTime.slice(0, 5) : null,
@@ -72,16 +72,32 @@ function goToDetail(post) {
 }
 
 // ── 좋아요 ────────────────────────────────────────────────
-function toggleLike(post) {
+// toggleLike에서 post.id로 바로 사용
+async function toggleLike(post) {
   if (post.liked) {
     post.likeCount--
     post.liked = false
+    try {
+      await cancelLike(post.id)
+    } catch (e) {
+      // 실패 시 롤백
+      post.likeCount++
+      post.liked = true
+      console.log(e.value)
+    }
   } else {
     post.likeCount++
     post.liked = true
+    try {
+      await addLike(post.id)
+    } catch (e) {
+      // 실패 시 롤백
+      post.likeCount--
+      post.liked = false
+      console.log(e.value)
+    }
   }
 }
-
 // ── 신고 ──────────────────────────────────────────────────
 const showReportModal = ref(false)
 const reportPostId = ref(null)

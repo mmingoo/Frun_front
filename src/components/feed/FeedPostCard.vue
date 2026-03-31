@@ -43,13 +43,7 @@ function next(postId, length) {
         <button class="action-btn btn-edit" @click="emit('edit', post)">수정</button>
         <button class="action-btn btn-delete" @click="emit('delete', post)">삭제</button>
       </div>
-      <button
-        v-else
-        class="btn-report"
-        @click="emit('report', post.id)"
-      >
-        신고
-      </button>
+      <button v-else class="btn-report" @click="emit('report', post.id)">신고</button>
     </header>
 
     <!-- 사진 슬라이더 -->
@@ -353,7 +347,7 @@ function next(postId, length) {
 
 /* ── 메모 ── */
 .memo {
-  padding: 6px 7.5% 14px calc(7.5% + 8px);
+  padding: 6px 7.5% 20px calc(7.5% + 8px);
   font-size: 13px;
   color: #4a5568;
   line-height: 1.55;

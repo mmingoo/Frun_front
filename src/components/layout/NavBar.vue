@@ -3,6 +3,7 @@ import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.js'
 import { logout as logoutApi, getMyProfile } from '@/api/auth.js'
+import { BASE_URL } from '@/api/index.js'
 import { ref } from 'vue'
 
 const router = useRouter()
@@ -15,7 +16,7 @@ onMounted(async () => {
   userId.value = res.data.data.userId
   if (!auth.profileImage) {
     try {
-      auth.setProfileImage(res.data.data.profileImageUrl)
+      auth.setProfileImage(res.data.data.profileImageUrl ? `${BASE_URL}${res.data.data.profileImageUrl}` : null)
     } catch {
       // 프로필 로딩 실패 시 무시
     }

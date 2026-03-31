@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { getRunningLogDetail } from '@/api/feed.js'
+import { addLike, cancelLike, getRunningLogDetail } from '@/api/feed.js'
 import { BASE_URL } from '@/api/index.js'
 import NavBar from '@/components/layout/NavBar.vue'
 import FriendSidebar from '@/components/layout/FriendSidebar.vue'
@@ -27,7 +27,7 @@ onMounted(async () => {
       runningLogId: d.runningLogId,
       authorId: d.userId,
       nickname: d.nickName,
-      profileImage: d.imageUrl ?? null,
+      profileImage: d.imageUrl ? `${BASE_URL}${d.imageUrl}` : null,
       createdAt: d.createdAt?.slice(0, 16).replace('T', ' ') ?? '',
       runDate: d.runDate,
       runTime: d.runTime ? d.runTime.slice(0, 5) : null,
@@ -38,7 +38,7 @@ onMounted(async () => {
       memo: d.memo,
       likeCount: d.likeCtn,
       commentCount: d.commentCtn,
-      liked: false,
+      liked: d.liked,
     }
   } catch (e) {
     const status = e.response?.status
@@ -88,14 +88,16 @@ function closeLightbox() {
 const isOwner = computed(() => post.value?.authorId === currentUserId)
 
 // ── 좋아요 ────────────────────────────────────────────────
-function toggleLike() {
+async function toggleLike() {
   if (!post.value) return
   if (post.value.liked) {
     post.value.likeCount--
     post.value.liked = false
+    await cancelLike(post.value.runningLogId)
   } else {
     post.value.likeCount++
     post.value.liked = true
+    await addLike(post.value.runningLogId)
   }
 }
 
@@ -281,7 +283,14 @@ function submitReport() {
               <!-- 러닝 스탯 -->
               <div class="stats-chips">
                 <span v-if="post.runDate" class="chip">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#3b5bdb"
+                    stroke-width="2.2"
+                  >
                     <rect x="3" y="4" width="18" height="18" rx="2" />
                     <line x1="16" y1="2" x2="16" y2="6" />
                     <line x1="8" y1="2" x2="8" y2="6" />
@@ -290,20 +299,41 @@ function submitReport() {
                   {{ post.runDate }}{{ post.runTime ? ' ' + post.runTime : '' }}
                 </span>
                 <span class="chip">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#3b5bdb"
+                    stroke-width="2.2"
+                  >
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                   </svg>
                   {{ post.distance }}km
                 </span>
                 <span class="chip">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#3b5bdb"
+                    stroke-width="2.2"
+                  >
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
                   {{ formatDuration(post.duration) }}
                 </span>
                 <span class="chip">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#3b5bdb"
+                    stroke-width="2.2"
+                  >
                     <path d="M3 12h18M3 6h18M3 18h18" />
                   </svg>
                   {{ post.pace }}
@@ -613,7 +643,7 @@ function submitReport() {
 
 /* 메모 */
 .post-memo {
-  padding: 6px 7.5% 14px calc(7.5% + 8px);
+  padding: 6px 7.5% 20px calc(7.5% + 8px);
   font-size: 13px;
   color: #4a5568;
   line-height: 1.55;
