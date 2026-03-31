@@ -17,3 +17,23 @@ export function getFeed(cursorId, size = 10) {
 export function getRunningLogDetail(runningLogId, authorId) {
   return api.get(`/api/v1/running-logs/${runningLogId}/${authorId}`)
 }
+
+export function updatedRunning(
+  runningLogId,
+  { runDate, distance, durationMin, durationSec, memo, isPublic, photos },
+) {
+  const formData = new FormData()
+
+  formData.append('runDate', runDate)
+  formData.append('distance', distance)
+  formData.append('durationMin', durationMin)
+  formData.append('durationSec', durationSec)
+  formData.append('memo', memo)
+  formData.append('isPublic', isPublic ? 'true' : 'false')
+
+  if (photos && photos.length > 0) {
+    photos.forEach((photo) => formData.append('images', photo.file))
+  }
+
+  return api.patch('/api/v1/running-logs/${runningLogId}', formData)
+}

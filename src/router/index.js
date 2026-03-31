@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LandingView from '@/views/fo/auth/LandingView.vue'
 import SetNickname from '@/views/fo/auth/SetNickname.vue'
 import WriteRunning from '@/views/fo/running/WriteRunning.vue'
+import EditRunning from '@/views/fo/running/EditRunning.vue'
 import FeedView from '@/views/fo/feed/FeedView.vue'
 import RunningDetail from '@/views/fo/feed/RunningDetail.vue'
 import StatsView from '@/views/fo/stats/StatsView.vue'
@@ -33,6 +34,11 @@ const router = createRouter({
       path: '/running/write',
       name: 'WriteRunning',
       component: WriteRunning,
+    },
+    {
+      path: '/running/edit/:runningLogId/:authorId',
+      name: 'EditRunning',
+      component: EditRunning,
     },
     {
       path: '/feed/:runningLogId/:authorId',

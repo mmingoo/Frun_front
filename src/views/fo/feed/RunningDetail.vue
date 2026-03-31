@@ -100,7 +100,7 @@ function toggleLike() {
 
 // ── 수정 / 삭제 ───────────────────────────────────────────
 function handleEdit() {
-  router.push(`/running/edit/${post.value.runningLogId}`)
+  router.push(`/running/edit/${post.value.runningLogId}/${post.value.authorId}`)
 }
 
 const showDeleteConfirm = ref(false)
@@ -244,15 +244,15 @@ function submitReport() {
                   </div>
                 </div>
                 <div v-if="isOwner" class="owner-actions">
-                  <button class="action-btn btn-edit" @click="handleEdit">수정</button>
-                  <button class="action-btn btn-delete" @click="showDeleteConfirm = true">
+                  <button class="action-btn btn-edit" @click.stop="handleEdit">수정</button>
+                  <button class="action-btn btn-delete" @click.stop="showDeleteConfirm = true">
                     삭제
                   </button>
                 </div>
                 <button
                   v-if="!isOwner"
                   class="report-link"
-                  @click="openReport('post', post.runningLogId)"
+                  @click.stop="openReport('post', post.runningLogId)"
                 >
                   신고
                 </button>
