@@ -4,13 +4,12 @@
   background: #f7f8fc;
 }
 
-
 /* ── 페이지 제목 바 ── */
 .page-title-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 20px 0 12px;
+  padding: 9px 0 12px;
 }
 
 .back-btn {
@@ -138,7 +137,6 @@
 .btn-delete {
   color: #e53e3e;
 }
-
 
 /* 스탯 */
 .stats-row {
@@ -448,7 +446,9 @@
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.2s, opacity 0.2s;
+  transition:
+    background 0.2s,
+    opacity 0.2s;
 }
 
 .comment-submit-btn:hover:not(:disabled) {
@@ -478,10 +478,6 @@
   .content-grid {
     grid-template-columns: 1fr;
     padding: 0 0 40px;
-  }
-
-  .page-title-bar {
-    padding: 16px 0 10px;
   }
 
   .comment-list {

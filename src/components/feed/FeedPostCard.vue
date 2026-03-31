@@ -1,13 +1,15 @@
 <script setup>
 import { ref } from 'vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import { useRouter } from 'vue-router'
 
 defineProps({
   post: { type: Object, required: true },
   currentUserId: { type: Number, required: true },
 })
 
-const emit = defineEmits(['like', 'report', 'detail'])
+const emit = defineEmits(['like', 'report', 'detail', 'edit', 'delete'])
+const router = useRouter()
 
 const imageIndexMap = ref({})
 
@@ -28,7 +30,7 @@ function next(postId, length) {
   <article class="card">
     <!-- 작성자 -->
     <header class="card-header">
-      <div class="author">
+      <div class="author" style="cursor: pointer" @click="router.push(`/mypage/${post.authorId}`)">
         <div class="avatar">
           <UserAvatar :src="post.profileImage" :alt="post.nickname" :size="20" />
         </div>
@@ -37,7 +39,15 @@ function next(postId, length) {
           <span class="author-date">{{ post.createdAt }}</span>
         </div>
       </div>
-      <button v-if="post.authorId !== currentUserId" class="btn-report" @click="emit('report', post.id)">
+      <div v-if="post.authorId === currentUserId" class="owner-actions">
+        <button class="action-btn btn-edit" @click="emit('edit', post)">수정</button>
+        <button class="action-btn btn-delete" @click="emit('delete', post)">삭제</button>
+      </div>
+      <button
+        v-else
+        class="btn-report"
+        @click="emit('report', post.id)"
+      >
         신고
       </button>
     </header>
@@ -66,19 +76,41 @@ function next(postId, length) {
     <!-- 스탯 -->
     <div v-if="post.distance" class="stats">
       <span class="chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#3b5bdb"
+          stroke-width="2.2"
+        >
           <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
         </svg>
         {{ post.distance }}km
       </span>
       <span class="chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2">
-          <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#3b5bdb"
+          stroke-width="2.2"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
         </svg>
         {{ post.duration }}분
       </span>
       <span class="chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#3b5bdb"
+          stroke-width="2.2"
+        >
           <path d="M3 12h18M3 6h18M3 18h18" />
         </svg>
         {{ post.pace }}
@@ -91,14 +123,29 @@ function next(postId, length) {
     <!-- 좋아요 / 댓글 -->
     <footer class="card-footer">
       <button class="btn-like" :class="{ liked: post.liked }" @click="emit('like', post)">
-        <svg width="15" height="15" viewBox="0 0 24 24"
-          :fill="post.liked ? '#e53e3e' : 'none'" stroke="#e53e3e" stroke-width="2">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          :fill="post.liked ? '#e53e3e' : 'none'"
+          stroke="#e53e3e"
+          stroke-width="2"
+        >
+          <path
+            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+          />
         </svg>
         좋아요 {{ post.likeCount }}개
       </button>
       <button class="btn-comment" @click="emit('detail', post)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
         댓글 {{ post.commentCount }}개
@@ -153,13 +200,35 @@ function next(postId, length) {
   gap: 2px;
 }
 .author-name {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: #1a1a2e;
 }
 .author-date {
   font-size: 11px;
   color: #94a3b8;
+}
+.owner-actions {
+  display: flex;
+  gap: 8px;
+}
+.action-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.action-btn:hover {
+  opacity: 0.7;
+}
+.btn-edit {
+  color: #3b5bdb;
+}
+.btn-delete {
+  color: #e53e3e;
 }
 .btn-report {
   background: none;
@@ -171,7 +240,9 @@ function next(postId, length) {
   padding: 0;
   transition: opacity 0.2s;
 }
-.btn-report:hover { opacity: 0.7; }
+.btn-report:hover {
+  opacity: 0.7;
+}
 
 /* ── 사진 ── */
 .photo-container {
@@ -216,9 +287,15 @@ function next(postId, length) {
   z-index: 2;
   transition: background 0.2s;
 }
-.arrow:hover { background: rgba(0, 0, 0, 0.55); }
-.arrow-left { left: -18px; }
-.arrow-right { right: -18px; }
+.arrow:hover {
+  background: rgba(0, 0, 0, 0.55);
+}
+.arrow-left {
+  left: -18px;
+}
+.arrow-right {
+  right: -18px;
+}
 .dots {
   position: absolute;
   bottom: 8px;
@@ -235,7 +312,9 @@ function next(postId, length) {
   background: rgba(255, 255, 255, 0.5);
   transition: background 0.2s;
 }
-.dot.active { background: #fff; }
+.dot.active {
+  background: #fff;
+}
 
 /* ── 스탯 ── */
 .stats {
@@ -286,7 +365,9 @@ function next(postId, length) {
   transition: color 0.2s;
 }
 .btn-like:hover,
-.btn-like.liked { color: #e53e3e; }
+.btn-like.liked {
+  color: #e53e3e;
+}
 .btn-comment {
   display: flex;
   align-items: center;
@@ -300,5 +381,7 @@ function next(postId, length) {
   padding: 0;
   transition: color 0.2s;
 }
-.btn-comment:hover { color: #3b5bdb; }
+.btn-comment:hover {
+  color: #3b5bdb;
+}
 </style>

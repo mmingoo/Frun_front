@@ -26,8 +26,8 @@ export function getMyRunningLogs(cursorId, size = 12) {
   })
 }
 
-export function getFriendRunningLogs(userId, cursorId, size = 12) {
-  return api.get(`api/v1/running-logs/user/${userId}`, {
+export function getFriendRunningLogs(friendId, cursorId, size = 12) {
+  return api.get(`/api/v1/running-logs/my/${friendId}`, {
     params: { cursorId, size },
   })
 }

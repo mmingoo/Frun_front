@@ -209,261 +209,259 @@ function submitReport() {
       <div class="page-outer-grid">
         <FriendSidebar />
         <div>
-      <!-- 제목 바 -->
-      <div class="page-title-bar">
-        <button class="back-btn" @click="router.back()">
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-            stroke-linecap="round"
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-        <h1 class="page-title">러닝일지 상세</h1>
-      </div>
+          <!-- 제목 바 -->
+          <div class="page-title-bar"></div>
 
-      <!-- 2열 그리드 -->
-      <main class="content-grid">
-        <!-- ── 왼쪽: 일지 본문 ── -->
-        <section class="post-section">
-          <!-- 작성자 -->
-          <div class="post-header">
-            <div class="author-info">
-              <div class="avatar">
-                <img v-if="post.profileImage" :src="post.profileImage" :alt="post.nickname" />
-                <svg
-                  v-else
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#94a3b8"
-                  stroke-width="1.8"
-                >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </div>
-              <div>
-                <p class="author-name">{{ post.nickname }}</p>
-                <p class="post-date">{{ post.createdAt }}</p>
-              </div>
-            </div>
-            <div v-if="isOwner" class="owner-actions">
-              <button class="action-btn btn-edit" @click="handleEdit">수정</button>
-              <button class="action-btn btn-delete" @click="showDeleteConfirm = true">삭제</button>
-            </div>
-            <button
-              v-if="!isOwner"
-              class="report-link"
-              @click="openReport('post', post.runningLogId)"
-            >
-              신고
-            </button>
-          </div>
-
-          <!-- 이미지 슬라이더 -->
-          <div v-if="post.logImages.length > 0" class="tracker-photo">
-            <img :src="post.logImages[currentImageIndex]" alt="러닝 사진" class="photo-clickable" @click="openLightbox" />
-            <!-- 이미지가 2장 이상일 때만 화살표 표시 -->
-            <template v-if="post.logImages.length > 1">
-              <button class="img-arrow img-arrow-left" @click="prevImage">‹</button>
-              <button class="img-arrow img-arrow-right" @click="nextImage">›</button>
-              <div class="img-dots">
-                <span
-                  v-for="(_, i) in post.logImages"
-                  :key="i"
-                  class="img-dot"
-                  :class="{ active: i === currentImageIndex }"
-                />
-              </div>
-            </template>
-          </div>
-
-          <!-- 러닝 스탯 -->
-          <div class="stats-row">
-            <div class="stat-item">
-              <span class="stat-label">거리</span>
-              <span class="stat-value">{{ post.distance }} km</span>
-            </div>
-            <div class="stat-divider" />
-            <div class="stat-item">
-              <span class="stat-label">시간</span>
-              <span class="stat-value">{{ formatDuration(post.duration) }}</span>
-            </div>
-            <div class="stat-divider" />
-            <div class="stat-item">
-              <span class="stat-label">페이스</span>
-              <span class="stat-value">{{ post.pace }}</span>
-            </div>
-          </div>
-
-          <!-- 메모 -->
-          <p v-if="post.memo" class="post-memo">{{ post.memo }}</p>
-
-          <!-- 좋아요 / 신고 -->
-          <div class="post-footer">
-            <button class="like-btn" :class="{ liked: post.liked }" @click="toggleLike">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                :fill="post.liked ? '#e53e3e' : 'none'"
-                stroke="#e53e3e"
-                stroke-width="2"
+          <!-- 2열 그리드 -->
+          <main class="content-grid">
+            <!-- ── 왼쪽: 일지 본문 ── -->
+            <section class="post-section">
+              <!-- 작성자 -->
+              <div
+                class="post-header"
+                style="cursor: pointer"
+                @click="router.push(`/mypage/${post.authorId}`)"
               >
-                <path
-                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5
-                  5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5
-                  5.5 0 0 0 0-7.78z"
-                />
-              </svg>
-              좋아요 {{ post.likeCount }}개
-            </button>
-          </div>
-        </section>
-
-        <!-- ── 오른쪽: 댓글 ── -->
-        <section class="comment-section">
-          <h2 class="comment-title">댓글 {{ totalCommentCount }}개</h2>
-
-          <div class="comment-list">
-            <div v-for="comment in comments" :key="comment.id" class="comment-block">
-              <!-- 댓글 -->
-              <div class="comment-item">
-                <div class="comment-avatar">
-                  <img
-                    v-if="comment.profileImage"
-                    :src="comment.profileImage"
-                    :alt="comment.nickname"
-                  />
-                  <svg
-                    v-else
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#94a3b8"
-                    stroke-width="2"
-                  >
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </div>
-                <div class="comment-body">
-                  <div class="comment-meta">
-                    <span class="comment-author">{{ comment.nickname }}</span>
-                    <span class="comment-date">{{ comment.createdAt }}</span>
-                  </div>
-                  <p class="comment-text">{{ comment.content }}</p>
-                  <div class="comment-actions">
-                    <button class="text-btn" @click="toggleReplyInput(comment)">답글 달기</button>
-                    <button
-                      v-if="comment.authorId !== currentUserId && !isOwner"
-                      class="text-btn text-btn-report"
-                      @click="openReport('comment', comment.id)"
-                    >
-                      신고
-                    </button>
-                    <button
-                      v-if="comment.authorId === currentUserId"
-                      class="text-btn text-btn-delete"
-                      @click="deleteComment(comment.id)"
-                    >
-                      삭제
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 답글 입력 -->
-              <div v-if="comment.showReplyInput" class="reply-input-wrap">
-                <input
-                  v-model="comment.replyInput"
-                  type="text"
-                  placeholder="답글을 입력하세요..."
-                  class="reply-input"
-                  maxlength="250"
-                  @keyup.enter="submitReply(comment)"
-                />
-                <button class="reply-submit-btn" @click="submitReply(comment)">등록</button>
-              </div>
-
-              <!-- 답글 목록 -->
-              <div v-if="comment.replies.length > 0" class="reply-list">
-                <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
-                  <div class="comment-avatar reply-avatar">
-                    <img
-                      v-if="reply.profileImage"
-                      :src="reply.profileImage"
-                      :alt="reply.nickname"
-                    />
+                <div class="author-info">
+                  <div class="avatar">
+                    <img v-if="post.profileImage" :src="post.profileImage" :alt="post.nickname" />
                     <svg
                       v-else
-                      width="14"
-                      height="14"
+                      width="22"
+                      height="22"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="#94a3b8"
-                      stroke-width="2"
+                      stroke-width="1.8"
                     >
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                       <circle cx="12" cy="7" r="4" />
                     </svg>
                   </div>
-                  <div class="comment-body">
-                    <div class="comment-meta">
-                      <span class="comment-author">{{ reply.nickname }}</span>
-                      <span class="comment-date">{{ reply.createdAt }}</span>
+                  <div>
+                    <p class="author-name">{{ post.nickname }}</p>
+                    <p class="post-date">{{ post.createdAt }}</p>
+                  </div>
+                </div>
+                <div v-if="isOwner" class="owner-actions">
+                  <button class="action-btn btn-edit" @click="handleEdit">수정</button>
+                  <button class="action-btn btn-delete" @click="showDeleteConfirm = true">
+                    삭제
+                  </button>
+                </div>
+                <button
+                  v-if="!isOwner"
+                  class="report-link"
+                  @click="openReport('post', post.runningLogId)"
+                >
+                  신고
+                </button>
+              </div>
+
+              <!-- 이미지 슬라이더 -->
+              <div v-if="post.logImages.length > 0" class="tracker-photo">
+                <img
+                  :src="post.logImages[currentImageIndex]"
+                  alt="러닝 사진"
+                  class="photo-clickable"
+                  @click="openLightbox"
+                />
+                <!-- 이미지가 2장 이상일 때만 화살표 표시 -->
+                <template v-if="post.logImages.length > 1">
+                  <button class="img-arrow img-arrow-left" @click="prevImage">‹</button>
+                  <button class="img-arrow img-arrow-right" @click="nextImage">›</button>
+                  <div class="img-dots">
+                    <span
+                      v-for="(_, i) in post.logImages"
+                      :key="i"
+                      class="img-dot"
+                      :class="{ active: i === currentImageIndex }"
+                    />
+                  </div>
+                </template>
+              </div>
+
+              <!-- 러닝 스탯 -->
+              <div class="stats-row">
+                <div class="stat-item">
+                  <span class="stat-label">거리</span>
+                  <span class="stat-value">{{ post.distance }} km</span>
+                </div>
+                <div class="stat-divider" />
+                <div class="stat-item">
+                  <span class="stat-label">시간</span>
+                  <span class="stat-value">{{ formatDuration(post.duration) }}</span>
+                </div>
+                <div class="stat-divider" />
+                <div class="stat-item">
+                  <span class="stat-label">페이스</span>
+                  <span class="stat-value">{{ post.pace }}</span>
+                </div>
+              </div>
+
+              <!-- 메모 -->
+              <p v-if="post.memo" class="post-memo">{{ post.memo }}</p>
+
+              <!-- 좋아요 / 신고 -->
+              <div class="post-footer">
+                <button class="like-btn" :class="{ liked: post.liked }" @click="toggleLike">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    :fill="post.liked ? '#e53e3e' : 'none'"
+                    stroke="#e53e3e"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5
+                  5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5
+                  5.5 0 0 0 0-7.78z"
+                    />
+                  </svg>
+                  좋아요 {{ post.likeCount }}개
+                </button>
+              </div>
+            </section>
+
+            <!-- ── 오른쪽: 댓글 ── -->
+            <section class="comment-section">
+              <h2 class="comment-title">댓글 {{ totalCommentCount }}개</h2>
+
+              <div class="comment-list">
+                <div v-for="comment in comments" :key="comment.id" class="comment-block">
+                  <!-- 댓글 -->
+                  <div class="comment-item">
+                    <div class="comment-avatar">
+                      <img
+                        v-if="comment.profileImage"
+                        :src="comment.profileImage"
+                        :alt="comment.nickname"
+                      />
+                      <svg
+                        v-else
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#94a3b8"
+                        stroke-width="2"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
                     </div>
-                    <p class="comment-text">{{ reply.content }}</p>
-                    <div class="comment-actions">
-                      <button
-                        v-if="reply.authorId !== currentUserId && !isOwner"
-                        class="text-btn text-btn-report"
-                        @click="openReport('reply', reply.id)"
-                      >
-                        신고
-                      </button>
-                      <button
-                        v-if="reply.authorId === currentUserId"
-                        class="text-btn text-btn-delete"
-                        @click="deleteReply(comment.id, reply.id)"
-                      >
-                        삭제
-                      </button>
+                    <div class="comment-body">
+                      <div class="comment-meta">
+                        <span class="comment-author">{{ comment.nickname }}</span>
+                        <span class="comment-date">{{ comment.createdAt }}</span>
+                      </div>
+                      <p class="comment-text">{{ comment.content }}</p>
+                      <div class="comment-actions">
+                        <button class="text-btn" @click="toggleReplyInput(comment)">
+                          답글 달기
+                        </button>
+                        <button
+                          v-if="comment.authorId !== currentUserId && !isOwner"
+                          class="text-btn text-btn-report"
+                          @click="openReport('comment', comment.id)"
+                        >
+                          신고
+                        </button>
+                        <button
+                          v-if="comment.authorId === currentUserId"
+                          class="text-btn text-btn-delete"
+                          @click="deleteComment(comment.id)"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 답글 입력 -->
+                  <div v-if="comment.showReplyInput" class="reply-input-wrap">
+                    <input
+                      v-model="comment.replyInput"
+                      type="text"
+                      placeholder="답글을 입력하세요..."
+                      class="reply-input"
+                      maxlength="250"
+                      @keyup.enter="submitReply(comment)"
+                    />
+                    <button class="reply-submit-btn" @click="submitReply(comment)">등록</button>
+                  </div>
+
+                  <!-- 답글 목록 -->
+                  <div v-if="comment.replies.length > 0" class="reply-list">
+                    <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+                      <div class="comment-avatar reply-avatar">
+                        <img
+                          v-if="reply.profileImage"
+                          :src="reply.profileImage"
+                          :alt="reply.nickname"
+                        />
+                        <svg
+                          v-else
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#94a3b8"
+                          stroke-width="2"
+                        >
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                      </div>
+                      <div class="comment-body">
+                        <div class="comment-meta">
+                          <span class="comment-author">{{ reply.nickname }}</span>
+                          <span class="comment-date">{{ reply.createdAt }}</span>
+                        </div>
+                        <p class="comment-text">{{ reply.content }}</p>
+                        <div class="comment-actions">
+                          <button
+                            v-if="reply.authorId !== currentUserId && !isOwner"
+                            class="text-btn text-btn-report"
+                            @click="openReport('reply', reply.id)"
+                          >
+                            신고
+                          </button>
+                          <button
+                            v-if="reply.authorId === currentUserId"
+                            class="text-btn text-btn-delete"
+                            @click="deleteReply(comment.id, reply.id)"
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <!-- 댓글 입력 -->
-          <div class="comment-input-area">
-            <input
-              v-model="newComment"
-              type="text"
-              placeholder="댓글을 입력하세요..."
-              class="comment-input"
-              maxlength="250"
-              @keyup.enter="submitComment"
-            />
-            <button
-              class="comment-submit-btn"
-              :disabled="!newComment.trim()"
-              @click="submitComment"
-            >
-              등록
-            </button>
-          </div>
-        </section>
-      </main>
+              <!-- 댓글 입력 -->
+              <div class="comment-input-area">
+                <input
+                  v-model="newComment"
+                  type="text"
+                  placeholder="댓글을 입력하세요..."
+                  class="comment-input"
+                  maxlength="250"
+                  @keyup.enter="submitComment"
+                />
+                <button
+                  class="comment-submit-btn"
+                  :disabled="!newComment.trim()"
+                  @click="submitComment"
+                >
+                  등록
+                </button>
+              </div>
+            </section>
+          </main>
         </div>
       </div>
     </template>

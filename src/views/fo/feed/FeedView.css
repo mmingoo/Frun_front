@@ -4,7 +4,6 @@
   background: #f7f8fc;
 }
 
-
 /* ── 3열 그리드 ── */
 .main-grid {
   display: grid;
@@ -264,10 +263,10 @@
 }
 
 .author-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: #1a1a2e;
-  margin: 0 0 2px;
+  margin: 0 0 0px;
 }
 
 .post-date {
@@ -350,8 +349,12 @@
   background: rgba(0, 0, 0, 0.55);
 }
 
-.photo-prev { left: -14px; }
-.photo-next { right: -14px; }
+.photo-prev {
+  left: -14px;
+}
+.photo-next {
+  right: -14px;
+}
 
 .photo-dots {
   position: absolute;
