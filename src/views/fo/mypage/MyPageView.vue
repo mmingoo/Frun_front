@@ -4,53 +4,55 @@ import { useRouter, useRoute } from 'vue-router'
 import NavBar from '@/components/layout/NavBar.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import FriendSidebar from '@/components/layout/FriendSidebar.vue'
-import { getMyRunningLogs, getFriendRunningLogs } from '@/api/running'
-import { getMypaeInfo, getFriendPageInfo } from '@/api/user'
+import ProfileEditModal from '@/components/mypage/ProfileEditModal.vue'
+import { getUserRunningLogs } from '@/api/running'
+import { getUserPageInfo, getMyInfo, updatUserProfile } from '@/api/user'
 import { BASE_URL } from '@/api/index.js'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const route = useRoute()
-const isMyPage = computed(() => !route.params.id)
-const myProfile = ref(null)
-const friendProfile = ref({})
+const auth = useAuthStore()
+const profile = ref(null)
 const isLoadingPosts = ref(false)
-const profile = computed(() => {
-  if (isMyPage.value) return myProfile.value
-  return friendProfile.value
-})
 const hasNext = ref(true)
 const cursorId = ref(null)
 const posts = ref([])
 const isLoadingProfile = ref(false)
-const friendStats = ref({ totalDistance: 120.8, totalCount: 22, avgPace: '6\'18"' })
 
-const stats = computed(() => {
-  if (isMyPage.value) {
-    return {
-      totalDistance: myProfile.value?.totalDistance ?? 0,
-      totalCount: myProfile.value?.totalCount ?? 0,
-      avgPace: myProfile.value?.avgPace ?? '-',
-    }
+const stats = computed(() => ({
+  totalDistance: profile.value?.totalDistance ?? 0,
+  totalCount: profile.value?.totalCount ?? 0,
+  avgPace: profile.value?.avgPace ?? '-',
+}))
+
+async function saveEdit({ bio, imageFile, imagePreview }) {
+  try {
+    await updatUserProfile(bio, imageFile) // API 호출
+
+    // API 성공 후 화면 반영
+    if (imageFile) profile.value.profileImage = imagePreview
+    profile.value.bio = bio
+  } catch (e) {
+    console.error('프로필 수정 실패', e)
   }
-  return friendStats.value
-})
-
+}
 function initPage() {
   posts.value = []
   hasNext.value = true
   cursorId.value = null
-
-  if (isMyPage.value) {
-    loadMyProfile()
-  } else {
-    loadFriendProfile()
-  }
-  loadMyPosts()
+  profile.value = null
+  loadProfile()
+  loadPosts()
 }
 
 onMounted(() => initPage())
 
-watch(() => route.params.id, () => initPage())
+watch(
+  () => route.params.id,
+  () => initPage(),
+)
+
 // ── 마이페이지 정보 ───────────────────────────────────────
 function parseDurationMin(duration) {
   if (!duration) return 0
@@ -58,17 +60,28 @@ function parseDurationMin(duration) {
   return h * 60 + m
 }
 
-async function loadMyProfile() {
+async function loadProfile() {
   isLoadingProfile.value = true
   try {
-    const res = await getMypaeInfo()
+    let userId = route.params.id
+    if (!userId) {
+      if (!auth.userId) {
+        const res = await getMyInfo()
+        auth.setUserId(res.data.data.userId)
+      }
+      userId = auth.userId
+    }
+    const res = await getUserPageInfo(userId)
     const d = res.data.data
-    myProfile.value = {
+    if (d.isOwner) auth.setUserId(d.userId)
+    profile.value = {
       id: d.userId,
       nickname: d.nickname,
       profileImage: d.profileImageUrl ? `${BASE_URL}${d.profileImageUrl}` : null,
       bio: d.bio ?? '',
       friendCount: d.friendCount,
+      isOwner: d.owner,
+      isFriend: d.friend ?? false,
       totalCount: d.totalRunCount,
       totalDistance: d.totalDistanceKm,
       avgPace: d.avgPace,
@@ -80,14 +93,13 @@ async function loadMyProfile() {
   }
 }
 
-async function loadMyPosts() {
+async function loadPosts() {
   if (isLoadingPosts.value || !hasNext.value) return
   isLoadingPosts.value = true
 
   try {
-    const res = isMyPage.value
-      ? await getMyRunningLogs(cursorId.value)
-      : await getFriendRunningLogs(route.params.id, cursorId.value)
+    const userId = route.params.id || auth.userId
+    const res = await getUserRunningLogs(userId, cursorId.value)
     const { feeds, hasNext: next, nextCursorId } = res.data.data
     const normalized = feeds.map((f) => ({
       id: f.runningLogId,
@@ -111,55 +123,19 @@ async function loadMyPosts() {
   }
 }
 
-async function loadFriendProfile() {
-  isLoadingProfile.value = true
-  try {
-    const res = await getFriendPageInfo(route.params.id)
-    const d = res.data.data
-    friendProfile.value = {
-      id: d.userId,
-      nickname: d.nickname,
-      profileImage: d.profileImageUrl ? `${BASE_URL}${d.profileImageUrl}` : null,
-      bio: d.bio ?? '',
-      friendCount: d.friendCount,
-      isFriend: d.isFriend ?? true,
-    }
-    friendStats.value = {
-      totalDistance: d.totalDistanceKm ?? 0,
-      totalCount: d.totalRunCount ?? 0,
-      avgPace: d.avgPace ?? '-',
-    }
-  } catch (e) {
-    console.error('친구 프로필 로딩 실패', e)
-  } finally {
-    isLoadingProfile.value = false
-  }
-}
-
 // ── 게시물 미리보기 오버레이 ──────────────────────────────
 const hoveredId = ref(null)
 
 // ── 프로필 편집 ──────────────────────────────────────────
 const showEditModal = ref(false)
-const editNickname = ref('')
-const editBio = ref('')
 
 function openEdit() {
-  editNickname.value = myProfile.value.nickname
-  editBio.value = myProfile.value.bio
   showEditModal.value = true
-}
-
-function saveEdit() {
-  if (!editNickname.value.trim()) return
-  myProfile.value.nickname = editNickname.value.trim()
-  myProfile.value.bio = editBio.value.trim()
-  showEditModal.value = false
 }
 
 // ── 친구 추가/삭제 ────────────────────────────────────────
 function toggleFriend() {
-  friendProfile.value.isFriend = !friendProfile.value.isFriend
+  profile.value.isFriend = !profile.value.isFriend
 }
 </script>
 
@@ -176,8 +152,10 @@ function toggleFriend() {
           <div v-if="isLoadingProfile" class="profile-loading">불러오는 중…</div>
           <div v-else-if="profile" class="profile-header">
             <!-- 아바타 -->
-            <div class="avatar-lg">
-              <UserAvatar :src="profile.profileImage" :alt="profile.nickname" :size="44" />
+            <div class="avatar-col">
+              <div class="avatar-lg">
+                <UserAvatar :src="profile.profileImage" :alt="profile.nickname" :size="44" />
+              </div>
             </div>
 
             <!-- 오른쪽 정보 -->
@@ -185,14 +163,22 @@ function toggleFriend() {
               <!-- 닉네임 + 버튼 -->
               <div class="profile-name-row">
                 <h1 class="profile-nickname">{{ profile.nickname }}</h1>
-                <button v-if="isMyPage" class="btn-edit" @click="openEdit">프로필 편집</button>
+                <button v-if="profile.isOwner" class="btn-edit" @click="openEdit">
+                  프로필 편집
+                </button>
                 <button
-                  v-else
-                  class="btn-friend"
-                  :class="{ 'btn-friend-delete': profile.isFriend }"
+                  v-else-if="!profile.isOwner && profile.isFriend"
+                  class="btn-friend btn-friend-delete"
                   @click="toggleFriend"
                 >
-                  {{ profile.isFriend ? '친구 삭제' : '친구 추가' }}
+                  친구 삭제
+                </button>
+                <button
+                  v-else-if="!profile.isOwner && !profile.isFriend"
+                  class="btn-friend"
+                  @click="toggleFriend"
+                >
+                  친구 추가
                 </button>
               </div>
 
@@ -215,10 +201,10 @@ function toggleFriend() {
                   <span class="count-value">{{ stats.avgPace }}</span>
                 </div>
               </div>
-
-              <!-- 한 줄 소개 -->
-              <p v-if="profile.bio" class="profile-bio">{{ profile.bio }}</p>
             </div>
+
+            <!-- 한 줄 소개 (두 컬럼 전체 너비) -->
+            <p v-if="profile.bio" class="profile-bio">{{ profile.bio }}</p>
           </div>
         </div>
 
@@ -283,7 +269,14 @@ function toggleFriend() {
                   {{ post.likeCount }}
                 </div>
                 <div class="overlay-stat">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="2"
+                  >
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                   {{ post.commentCount }}
@@ -296,41 +289,12 @@ function toggleFriend() {
     </div>
 
     <!-- ── 프로필 편집 모달 ── -->
-    <div v-if="showEditModal" class="modal-overlay" @click.self="showEditModal = false">
-      <div class="modal">
-        <h3 class="modal-title">프로필 편집</h3>
-        <div class="form-group">
-          <label class="form-label">닉네임</label>
-          <input
-            v-model="editNickname"
-            type="text"
-            class="form-input"
-            placeholder="닉네임을 입력하세요"
-            maxlength="20"
-          />
-        </div>
-        <div class="form-group">
-          <label class="form-label">한 줄 소개</label>
-          <input
-            v-model="editBio"
-            type="text"
-            class="form-input"
-            placeholder="한 줄 소개를 입력하세요"
-            maxlength="50"
-          />
-        </div>
-        <div class="modal-actions">
-          <button class="modal-btn modal-cancel" @click="showEditModal = false">취소</button>
-          <button
-            class="modal-btn modal-confirm"
-            :disabled="!editNickname.trim()"
-            @click="saveEdit"
-          >
-            저장
-          </button>
-        </div>
-      </div>
-    </div>
+    <ProfileEditModal
+      v-model="showEditModal"
+      :profile-image="profile?.profileImage"
+      :bio="profile?.bio"
+      @save="saveEdit"
+    />
   </div>
 </template>
 

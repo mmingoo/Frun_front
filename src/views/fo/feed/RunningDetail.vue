@@ -30,6 +30,7 @@ onMounted(async () => {
       profileImage: d.imageUrl ?? null,
       createdAt: d.createdAt?.slice(0, 16).replace('T', ' ') ?? '',
       runDate: d.runDate,
+      runTime: d.runTime ? d.runTime.slice(0, 5) : null,
       logImages: (d.logImages ?? []).map((img) => `${BASE_URL}${img}`),
       distance: d.distance,
       duration: d.duration, // "HH:mm:ss" 형태
@@ -259,18 +260,10 @@ function submitReport() {
               </div>
 
               <!-- 이미지 슬라이더 -->
-              <div v-if="post.logImages.length > 0" class="tracker-photo">
-                <img
-                  :src="post.logImages[currentImageIndex]"
-                  alt="러닝 사진"
-                  class="photo-clickable"
-                  @click="openLightbox"
-                />
-                <!-- 이미지가 2장 이상일 때만 화살표 표시 -->
-                <template v-if="post.logImages.length > 1">
-                  <button class="img-arrow img-arrow-left" @click="prevImage">‹</button>
-                  <button class="img-arrow img-arrow-right" @click="nextImage">›</button>
-                  <div class="img-dots">
+              <div v-if="post.logImages.length > 0" class="photo-container">
+                <div class="photo-inner" @click="openLightbox">
+                  <img :src="post.logImages[currentImageIndex]" alt="러닝 사진" />
+                  <div v-if="post.logImages.length > 1" class="img-dots">
                     <span
                       v-for="(_, i) in post.logImages"
                       :key="i"
@@ -278,36 +271,51 @@ function submitReport() {
                       :class="{ active: i === currentImageIndex }"
                     />
                   </div>
+                </div>
+                <template v-if="post.logImages.length > 1">
+                  <button class="img-arrow img-arrow-left" @click="prevImage">‹</button>
+                  <button class="img-arrow img-arrow-right" @click="nextImage">›</button>
                 </template>
               </div>
 
               <!-- 러닝 스탯 -->
-              <div class="stats-row">
-                <div class="stat-item">
-                  <span class="stat-label">거리</span>
-                  <span class="stat-value">{{ post.distance }} km</span>
-                </div>
-                <div class="stat-divider" />
-                <div class="stat-item">
-                  <span class="stat-label">시간</span>
-                  <span class="stat-value">{{ formatDuration(post.duration) }}</span>
-                </div>
-                <div class="stat-divider" />
-                <div class="stat-item">
-                  <span class="stat-label">페이스</span>
-                  <span class="stat-value">{{ post.pace }}</span>
-                </div>
+              <div class="stats-chips">
+                <span v-if="post.runDate" class="chip">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  {{ post.runDate }}{{ post.runTime ? ' ' + post.runTime : '' }}
+                </span>
+                <span class="chip">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                  </svg>
+                  {{ post.distance }}km
+                </span>
+                <span class="chip">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  {{ formatDuration(post.duration) }}
+                </span>
+                <span class="chip">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2.2">
+                    <path d="M3 12h18M3 6h18M3 18h18" />
+                  </svg>
+                  {{ post.pace }}
+                </span>
               </div>
 
-              <!-- 메모 -->
-              <p v-if="post.memo" class="post-memo">{{ post.memo }}</p>
-
-              <!-- 좋아요 / 신고 -->
+              <!-- 좋아요 -->
               <div class="post-footer">
                 <button class="like-btn" :class="{ liked: post.liked }" @click="toggleLike">
                   <svg
-                    width="16"
-                    height="16"
+                    width="15"
+                    height="15"
                     viewBox="0 0 24 24"
                     :fill="post.liked ? '#e53e3e' : 'none'"
                     stroke="#e53e3e"
@@ -322,6 +330,9 @@ function submitReport() {
                   좋아요 {{ post.likeCount }}개
                 </button>
               </div>
+
+              <!-- 메모 -->
+              <p v-if="post.memo" class="post-memo">{{ post.memo }}</p>
             </section>
 
             <!-- ── 오른쪽: 댓글 ── -->
@@ -553,18 +564,80 @@ function submitReport() {
   }
 }
 
-/* 이미지 슬라이더 */
-.tracker-photo {
-  position: relative;
-  overflow: hidden;
-  aspect-ratio: 4 / 5;
-  width: 75%;
-  margin: 0 auto;
-  background: #f1f3f7;
-  border-radius: 8px;
+/* 스탯 칩 */
+.stats-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 7.5% 4px;
 }
 
-.tracker-photo img {
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b5bdb;
+  background: #eef2ff;
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+
+/* 좋아요 */
+.post-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 7.5% 10px calc(7.5% + 8px);
+}
+
+.like-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #718096;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.like-btn:hover,
+.like-btn.liked {
+  color: #e53e3e;
+}
+
+/* 메모 */
+.post-memo {
+  padding: 6px 7.5% 14px calc(7.5% + 8px);
+  font-size: 13px;
+  color: #4a5568;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* 이미지 슬라이더 */
+.photo-container {
+  position: relative;
+  width: 85%;
+  margin: 0 auto;
+}
+
+.photo-inner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 10px;
+  cursor: zoom-in;
+  background: #f1f3f7;
+}
+
+.photo-inner img {
   position: absolute;
   top: 0;
   left: 0;
@@ -582,9 +655,9 @@ function submitReport() {
   color: #fff;
   border: none;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 20px;
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -598,25 +671,25 @@ function submitReport() {
   background: rgba(0, 0, 0, 0.55);
 }
 .img-arrow-left {
-  left: 10px;
+  left: -18px;
 }
 .img-arrow-right {
-  right: 10px;
+  right: -18px;
 }
 
 .img-dots {
   position: absolute;
-  bottom: 10px;
+  bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 6px;
+  gap: 5px;
   z-index: 2;
 }
 
 .img-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.5);
   transition: background 0.2s;
@@ -624,11 +697,6 @@ function submitReport() {
 
 .img-dot.active {
   background: #fff;
-}
-
-/* 이미지 클릭 커서 */
-.photo-clickable {
-  cursor: zoom-in;
 }
 
 /* 라이트박스 */

@@ -176,42 +176,6 @@
   flex-shrink: 0;
 }
 
-/* 메모 */
-.post-memo {
-  padding: 14px 20px;
-  font-size: 14px;
-  color: #2d3748;
-  line-height: 1.6;
-  margin: 0;
-  border-bottom: 1px solid #f1f3f7;
-}
-
-/* 좋아요/신고 */
-.post-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
-}
-
-.like-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  color: #718096;
-  padding: 0;
-  transition: color 0.2s;
-}
-
-.like-btn:hover,
-.like-btn.liked {
-  color: #e53e3e;
-}
 
 .report-link {
   background: none;

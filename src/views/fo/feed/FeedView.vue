@@ -54,6 +54,8 @@ async function loadFeed() {
       commentCount: f.commentCtn ?? 0,
       liked: false,
       createdAt: f.createdAt ? f.createdAt.slice(0, 16).replace('T', ' ') : '',
+      runDate: f.runDate ?? null,
+      runTime: f.runTime ? f.runTime.slice(0, 5) : null,
     }))
     posts.value.push(...normalized)
     hasNext.value = next

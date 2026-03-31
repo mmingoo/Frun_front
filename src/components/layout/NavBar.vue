@@ -3,16 +3,19 @@ import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.js'
 import { logout as logoutApi, getMyProfile } from '@/api/auth.js'
+import { ref } from 'vue'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const userId = ref({})
 
 onMounted(async () => {
+  const res = await getMyProfile()
+  userId.value = res.data.data.userId
   if (!auth.profileImage) {
     try {
-      const res = await getMyProfile()
-      auth.setProfileImage(res.data.data.profileImage)
+      auth.setProfileImage(res.data.data.profileImageUrl)
     } catch {
       // 프로필 로딩 실패 시 무시
     }
@@ -58,7 +61,7 @@ async function handleLogout() {
         :class="{ active: route.path === '/stats' }"
         @click="router.push('/stats')"
       >
-        동계
+        통계
       </button>
       <button
         class="nav-item"
@@ -103,7 +106,7 @@ async function handleLogout() {
           />
         </svg>
       </button>
-      <button class="nav-profile-btn" @click="router.push('/mypage')">
+      <button class="nav-profile-btn" @click="router.push(`/mypage/${userId}`)">
         <img
           v-if="auth.profileImage"
           :src="auth.profileImage"

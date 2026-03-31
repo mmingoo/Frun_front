@@ -20,21 +20,16 @@ export function createRunning({
   return api.post('/api/v1/running-logs', formData)
 }
 
-export function getMyRunningLogs(cursorId, size = 12) {
-  return api.get('api/v1/running-logs/my', {
+export function getUserRunningLogs(userId, cursorId, size = 12) {
+  return api.get(`/api/v1/running-logs/users/${userId}/feeds`, {
     params: { cursorId, size },
   })
 }
 
-export function getFriendRunningLogs(friendId, cursorId, size = 12) {
-  return api.get(`/api/v1/running-logs/my/${friendId}`, {
-    params: { cursorId, size },
-  })
-}
-
-export function updateRunning(runningLogId, { runDate, distance, durationMin, durationSec, memo, isPublic, keepImageUrls, newPhotos }) {
+export function updateRunning(runningLogId, { runDate, runTime, distance, durationMin, durationSec, memo, isPublic, keepImageUrls, newPhotos }) {
   const formData = new FormData()
   formData.append('runDate', runDate)
+  if (runTime) formData.append('runTime', runTime)
   formData.append('distance', distance)
   formData.append('durationMin', durationMin)
   formData.append('durationSec', durationSec)

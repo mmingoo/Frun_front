@@ -75,6 +75,22 @@ function next(postId, length) {
 
     <!-- 스탯 -->
     <div v-if="post.distance" class="stats">
+      <span v-if="post.runDate" class="chip">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#3b5bdb"
+          stroke-width="2.2"
+        >
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+        {{ post.runDate }}{{ post.runTime ? ' ' + post.runTime : '' }}
+      </span>
       <span class="chip">
         <svg
           width="12"
@@ -117,9 +133,6 @@ function next(postId, length) {
       </span>
     </div>
 
-    <!-- 메모 -->
-    <p v-if="post.memo" class="memo">{{ post.memo }}</p>
-
     <!-- 좋아요 / 댓글 -->
     <footer class="card-footer">
       <button class="btn-like" :class="{ liked: post.liked }" @click="emit('like', post)">
@@ -151,6 +164,9 @@ function next(postId, length) {
         댓글 {{ post.commentCount }}개
       </button>
     </footer>
+
+    <!-- 메모 -->
+    <p v-if="post.memo" class="memo">{{ post.memo }}</p>
   </article>
 </template>
 
@@ -321,7 +337,7 @@ function next(postId, length) {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  padding: 10px 16px 4px;
+  padding: 10px 7.5% 4px;
 }
 .chip {
   display: inline-flex;
@@ -337,7 +353,7 @@ function next(postId, length) {
 
 /* ── 메모 ── */
 .memo {
-  padding: 6px 16px 4px 24px;
+  padding: 6px 7.5% 14px calc(7.5% + 8px);
   font-size: 13px;
   color: #4a5568;
   line-height: 1.55;
@@ -349,7 +365,7 @@ function next(postId, length) {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 10px 16px 14px;
+  padding: 6px 7.5% 10px calc(7.5% + 8px);
 }
 .btn-like {
   display: flex;

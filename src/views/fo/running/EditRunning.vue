@@ -131,8 +131,9 @@ onMounted(async () => {
     const res = await getRunningLogDetail(runningLogId, authorId)
     const d = res.data.data
 
-    // 날짜
+    // 날짜 / 시간
     runDate.value = d.runDate ?? defaultDate
+    runTime.value = d.runTime ?? defaultTime
 
     // 거리
     distance.value = String(d.distance ?? '')
@@ -175,6 +176,7 @@ async function handleSubmit() {
     const { runningLogId } = route.params
     await updateRunning(runningLogId, {
       runDate: runDate.value,
+      runTime: runTime.value,
       distance: distance.value,
       durationMin: parseInt(durationMin.value) || 0,
       durationSec: parseInt(durationSec.value) || 0,
