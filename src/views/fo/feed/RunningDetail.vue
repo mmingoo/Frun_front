@@ -1,10 +1,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { addLike, cancelLike, getRunningLogDetail } from '@/api/feed.js'
+import { addLike, cancelLike, deleteRunningLog, getRunningLogDetail } from '@/api/feed.js'
 import { BASE_URL } from '@/api/index.js'
 import NavBar from '@/components/layout/NavBar.vue'
 import FriendSidebar from '@/components/layout/FriendSidebar.vue'
+import ReportModal from '@/components/common/ReportModal.vue'
+import { getMyInfo } from '@/api/user.js'
+import { useAuthStore } from '@/stores/auth.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -14,10 +17,14 @@ const post = ref(null)
 const isLoading = ref(true)
 const errorMsg = ref('')
 
-const currentUserId = 1 // TODO: auth store에서 꺼내기
+const auth = useAuthStore()
 
 // ── API 호출 ───────────────────────────────────────────────
 onMounted(async () => {
+  if (!auth.userId) {
+    const res = await getMyInfo()
+    auth.setUserId(res.data.data.userId)
+  }
   const { runningLogId, authorId } = route.params
   try {
     const res = await getRunningLogDetail(runningLogId, authorId)
@@ -85,7 +92,7 @@ function closeLightbox() {
   lightboxOpen.value = false
 }
 
-const isOwner = computed(() => post.value?.authorId === currentUserId)
+const isOwner = computed(() => post.value?.authorId === auth.userId)
 
 // ── 좋아요 ────────────────────────────────────────────────
 async function toggleLike() {
@@ -108,10 +115,16 @@ function handleEdit() {
 
 const showDeleteConfirm = ref(false)
 
-function confirmDelete() {
+async function confirmDelete() {
   // TODO: 삭제 API 연동
   showDeleteConfirm.value = false
-  router.push('/feed')
+  try {
+    await deleteRunningLog(post.value.runningLogId)
+  } catch (e) {
+    console.log(e.value)
+  } finally {
+    router.push(`/mypage/${auth.userId}`)
+  }
 }
 
 // ── 댓글 (목 — 추후 API 연동) ─────────────────────────────
@@ -123,7 +136,7 @@ function submitComment() {
   if (!text || text.length > 250) return
   comments.value.push({
     id: Date.now(),
-    authorId: currentUserId,
+    authorId: auth.userId,
     nickname: '나',
     profileImage: null,
     content: text,
@@ -150,7 +163,7 @@ function submitReply(comment) {
   if (!text || text.length > 250) return
   comment.replies.push({
     id: Date.now(),
-    authorId: currentUserId,
+    authorId: auth.userId,
     nickname: '나',
     profileImage: null,
     content: text,
@@ -175,18 +188,13 @@ const totalCommentCount = computed(() =>
 // ── 신고 ──────────────────────────────────────────────────
 const showReportModal = ref(false)
 const reportTarget = ref(null)
-const reportReason = ref('')
-const reportEtc = ref('')
 
 function openReport(type, id) {
   reportTarget.value = { type, id }
-  reportReason.value = ''
-  reportEtc.value = ''
   showReportModal.value = true
 }
 
 function submitReport() {
-  if (!reportReason.value) return
   // TODO: 신고 API 연동
   showReportModal.value = false
 }
@@ -403,14 +411,14 @@ function submitReport() {
                           답글 달기
                         </button>
                         <button
-                          v-if="comment.authorId !== currentUserId && !isOwner"
+                          v-if="comment.authorId !== auth.userId && !isOwner"
                           class="text-btn text-btn-report"
                           @click="openReport('comment', comment.id)"
                         >
                           신고
                         </button>
                         <button
-                          v-if="comment.authorId === currentUserId"
+                          v-if="comment.authorId === auth.userId"
                           class="text-btn text-btn-delete"
                           @click="deleteComment(comment.id)"
                         >
@@ -463,14 +471,15 @@ function submitReport() {
                         <p class="comment-text">{{ reply.content }}</p>
                         <div class="comment-actions">
                           <button
-                            v-if="reply.authorId !== currentUserId && !isOwner"
+                            auth.userId
+                            v-if="reply.authorId !== auth.userId && !isOwner"
                             class="text-btn text-btn-report"
                             @click="openReport('reply', reply.id)"
                           >
                             신고
                           </button>
                           <button
-                            v-if="reply.authorId === currentUserId"
+                            v-if="reply.authorId === auth.userId"
                             class="text-btn text-btn-delete"
                             @click="deleteReply(comment.id, reply.id)"
                           >
@@ -521,7 +530,7 @@ function submitReport() {
     <!-- ── 삭제 확인 모달 ── -->
     <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
       <div class="modal">
-        <h3 class="modal-title">일지를 삭제하시겠어요?</h3>
+        <h3 class="modal-title">러닝일지를 삭제하시겠습니까?</h3>
         <p class="modal-desc">삭제된 일지는 복구할 수 없습니다.</p>
         <div class="modal-actions">
           <button class="modal-btn modal-cancel" @click="showDeleteConfirm = false">취소</button>
@@ -531,35 +540,7 @@ function submitReport() {
     </div>
 
     <!-- ── 신고 모달 ── -->
-    <div v-if="showReportModal" class="modal-overlay" @click.self="showReportModal = false">
-      <div class="modal">
-        <h3 class="modal-title">신고 사유 선택</h3>
-        <div class="report-options">
-          <label class="report-option">
-            <input v-model="reportReason" type="radio" value="inappropriate" />
-            부적절한 콘텐츠
-          </label>
-          <label class="report-option">
-            <input v-model="reportReason" type="radio" value="etc" />
-            기타
-          </label>
-        </div>
-        <textarea
-          v-if="reportReason === 'etc'"
-          v-model="reportEtc"
-          placeholder="신고 사유를 입력하세요."
-          class="report-textarea"
-          maxlength="200"
-          rows="3"
-        />
-        <div class="modal-actions">
-          <button class="modal-btn modal-cancel" @click="showReportModal = false">취소</button>
-          <button class="modal-btn modal-confirm" :disabled="!reportReason" @click="submitReport">
-            신고
-          </button>
-        </div>
-      </div>
-    </div>
+    <ReportModal v-model:show="showReportModal" @submit="submitReport" />
   </div>
 </template>
 

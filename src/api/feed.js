@@ -41,3 +41,7 @@ export function addLike(runningLogId) {
 export function cancelLike(runningLogId) {
   return api.delete(`/api/v1/running-logs/likes/${runningLogId}`)
 }
+
+export function deleteRunningLog(runningLogId) {
+  return api.delete(`/api/v1/running-logs/${runningLogId}`)
+}

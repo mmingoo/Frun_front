@@ -57,12 +57,15 @@ function confirm() {
   font-size: 16px;
   font-weight: 700;
   color: #1a1a2e;
-  margin: 0 0 8px;
+  margin: 0 0 12px;
 }
+
 .modal-desc {
   font-size: 13px;
+  font-weight: 400; /* 700 → 400으로 변경 */
   color: #718096;
-  margin: 0 0 20px;
+  margin: 0 0 24px;
+  margin-bottom: 15px;
 }
 .modal-actions {
   display: flex;
@@ -70,9 +73,9 @@ function confirm() {
 }
 .modal-btn {
   flex: 1;
-  height: 44px;
-  border-radius: 10px;
-  font-size: 14px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
