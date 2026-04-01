@@ -446,11 +446,45 @@
   flex-direction: column;
 }
 
+.friends-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
 .friends-title {
   font-size: 13px;
   font-weight: 700;
   color: #2d3748;
-  margin: 0 0 10px;
+  margin: 0;
+}
+
+.my-stats-btn {
+  font-size: 11px;
+  font-family: inherit;
+  color: #3b5bdb;
+  background: none;
+  border: 1px solid #3b5bdb;
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.my-stats-btn:hover {
+  background: #3b5bdb;
+  color: #fff;
+}
+
+.selected-friend-banner {
+  font-size: 11px;
+  color: #3b5bdb;
+  background: #eef2ff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
 }
 
 .friends-search-row {
@@ -534,6 +568,22 @@
 
 .friends-item:hover {
   background: #eef2ff;
+}
+
+.friends-item--selected {
+  background: #dbe4ff;
+  border: 1px solid #3b5bdb;
+}
+
+.friends-item--selected:hover {
+  background: #dbe4ff;
+}
+
+.friend-distance {
+  margin-left: auto;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
 }
 
 .friend-avatar {
