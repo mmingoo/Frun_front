@@ -1,6 +1,5 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
 import NavBar from '@/components/layout/NavBar.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { getWeeklyStats, getMonthlyStats, getPeriodStats } from '@/api/stats'
@@ -8,7 +7,6 @@ import { getFriendList } from '@/api/friend'
 import { useAuthStore } from '@/stores/auth'
 import { getMyInfo } from '@/api/user'
 
-const router = useRouter()
 const authStore = useAuthStore()
 
 // ── 로딩 / 에러 ───────────────────────────────────────────
@@ -115,7 +113,9 @@ async function fetchMonthly() {
   isLoading.value = true
   errorMsg.value = null
   try {
-    const res = await getMonthlyStats(targetUserId.value, today.getFullYear(), today.getMonth() + 1)
+    // const res = await getMonthlyStats(targetUserId.value, today.getFullYear(), today.getMonth() + 1)
+    const res = await getMonthlyStats(targetUserId.value)
+
     const { summary, chart } = res.data.data
 
     monthStats.value = formatSummary(summary)
@@ -292,9 +292,7 @@ onBeforeUnmount(() => {
 })
 
 const friendPanelTitle = computed(() => {
-  if (activeTab.value === 'week') return '친구 이번 주 기록'
-  if (activeTab.value === 'month') return '친구 이번 달 기록'
-  return '친구 기간 내 기록'
+  return '친구 러닝 통계'
 })
 </script>
 
@@ -487,10 +485,10 @@ const friendPanelTitle = computed(() => {
               내 통계 보기
             </button>
           </div>
-          <div v-if="selectedFriendId" class="selected-friend-banner">
+          <!-- <div v-if="selectedFriendId" class="selected-friend-banner">
             {{ visibleFriends.find((f) => f.userId === selectedFriendId)?.nickname ?? '친구' }}의
             통계를 보는 중
-          </div>
+          </div> -->
           <div class="friends-search-row">
             <div class="friends-search-box">
               <svg
@@ -525,9 +523,6 @@ const friendPanelTitle = computed(() => {
                 <UserAvatar :src="friend.profileImage" :alt="friend.nickname" :size="12" />
               </div>
               <span class="friend-name">{{ friend.nickname }}</span>
-              <span class="friend-distance"
-                >{{ friend.totalDistanceKm ?? friend.totalDistance ?? 0 }} km</span
-              >
             </li>
             <li
               v-if="visibleCount < filteredFriendRecords.length"

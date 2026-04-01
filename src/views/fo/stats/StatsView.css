@@ -4,7 +4,6 @@
   background: #f7f8fc;
 }
 
-
 /* ── 메인 래퍼 ── */
 .main-wrap {
   max-width: 1080px;
@@ -469,7 +468,9 @@
   border-radius: 6px;
   padding: 2px 8px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .my-stats-btn:hover {
@@ -477,7 +478,7 @@
   color: #fff;
 }
 
-.selected-friend-banner {
+/* .selected-friend-banner {
   font-size: 11px;
   color: #3b5bdb;
   background: #eef2ff;
@@ -485,7 +486,7 @@
   padding: 4px 8px;
   margin-bottom: 8px;
   font-weight: 600;
-}
+} */
 
 .friends-search-row {
   margin-bottom: 8px;

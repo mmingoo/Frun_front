@@ -3,6 +3,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { addLike, cancelLike, getFeed, reportPost } from '@/api/feed.js'
 import { BASE_URL } from '@/api/index.js'
+import { getWeeklyStats, getMonthlyStats } from '@/api/stats'
+import { getMyInfo } from '@/api/user'
+import { useAuthStore } from '@/stores/auth'
 import './FeedView.css'
 import NavBar from '@/components/layout/NavBar.vue'
 import FeedPostCard from '@/components/feed/FeedPostCard.vue'
@@ -10,12 +13,58 @@ import ReportModal from '@/components/common/ReportModal.vue'
 import FriendSidebar from '@/components/layout/FriendSidebar.vue'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const currentUserId = ref([])
 
 onMounted(async () => {
-  await loadFeed()
+  if (!authStore.userId) {
+    const res = await getMyInfo()
+    authStore.setUserId(res.data.data.userId)
+  }
+  await Promise.all([loadFeed(), loadMyStats()])
 })
+
+function formatPace(sec) {
+  if (!sec) return '-'
+  return `${Math.floor(sec / 60)}'${String(sec % 60).padStart(2, '0')}"`
+}
+
+function formatDuration(sec) {
+  if (!sec) return '-'
+  const h = Math.floor(sec / 3600)
+  const m = Math.floor((sec % 3600) / 60)
+  return h > 0 ? `${h}시간 ${m}분` : `${m}분`
+}
+
+async function loadMyStats() {
+  const today = new Date()
+  const todayStr = today.toISOString().slice(0, 10)
+  try {
+    const [weekRes, monthRes] = await Promise.all([
+      getWeeklyStats(authStore.userId, todayStr),
+      getMonthlyStats(authStore.userId, today.getFullYear(), today.getMonth() + 1),
+    ])
+    const w = weekRes.data.data.summary
+    const mo = monthRes.data.data.summary
+    myStats.value = {
+      week: {
+        distance: w.totalDistanceKm,
+        count: w.runCount,
+        pace: formatPace(w.avgPaceSec),
+        totalTime: formatDuration(w.totalDurationSec),
+      },
+      month: {
+        distance: mo.totalDistanceKm,
+        count: mo.runCount,
+        pace: formatPace(mo.avgPaceSec),
+        totalTime: formatDuration(mo.totalDurationSec),
+      },
+    }
+  } catch (e) {
+    console.error('내 통계 로딩 실패', e)
+  }
+}
 
 // ── 공지사항 ──────────────────────────────────────────────
 const myStats = ref({})
@@ -159,6 +208,10 @@ async function submitReport({ reason, etc }) {
               <span class="stats-label">평균 페이스</span>
               <span class="stats-value">{{ myStats.week?.pace }}</span>
             </div>
+            <div class="stats-item">
+              <span class="stats-label">총 러닝 시간</span>
+              <span class="stats-value">{{ myStats.week?.totalTime }}</span>
+            </div>
           </div>
 
           <div class="stats-divider" />
@@ -169,7 +222,7 @@ async function submitReport({ reason, etc }) {
           <div class="stats-grid">
             <div class="stats-item">
               <span class="stats-label">총 거리</span>
-              <span class="stats-value highlight">{{ myStats.month?.distance }} km</span>
+              <span class="stats-value">{{ myStats.month?.distance }} km</span>
             </div>
             <div class="stats-item">
               <span class="stats-label">러닝 횟수</span>
@@ -178,6 +231,10 @@ async function submitReport({ reason, etc }) {
             <div class="stats-item">
               <span class="stats-label">평균 페이스</span>
               <span class="stats-value">{{ myStats.month?.pace }}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">총 러닝 시간</span>
+              <span class="stats-value">{{ myStats.month?.totalTime }}</span>
             </div>
           </div>
         </div>
