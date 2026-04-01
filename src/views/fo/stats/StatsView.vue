@@ -4,7 +4,9 @@ import { useRouter } from 'vue-router'
 import NavBar from '@/components/layout/NavBar.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { getWeeklyStats, getMonthlyStats, getPeriodStats } from '@/api/stats'
+import { getFriendList } from '@/api/friend'
 import { useAuthStore } from '@/stores/auth'
+import { getMyInfo } from '@/api/user'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -92,7 +94,7 @@ async function fetchWeekly() {
   errorMsg.value = null
   try {
     const res = await getWeeklyStats(targetUserId.value, todayStr)
-    const { summary, chart, friendStats } = res.data
+    const { summary, chart } = res.data.data
 
     weekStats.value = formatSummary(summary)
 
@@ -101,8 +103,6 @@ async function fetchWeekly() {
       label: DAY_OF_WEEK_MAP[d.dayOfWeek],
       distance: d.distanceKm,
     }))
-
-    if (!selectedFriendId.value) friendRecords.value = friendStats
   } catch (e) {
     errorMsg.value = '주별 데이터를 불러오지 못했습니다.'
     console.error(e)
@@ -116,7 +116,7 @@ async function fetchMonthly() {
   errorMsg.value = null
   try {
     const res = await getMonthlyStats(targetUserId.value, today.getFullYear(), today.getMonth() + 1)
-    const { summary, chart, friendStats } = res.data
+    const { summary, chart } = res.data.data
 
     monthStats.value = formatSummary(summary)
 
@@ -129,8 +129,6 @@ async function fetchMonthly() {
         distance: d.distanceKm,
       })),
     }))
-
-    if (!selectedFriendId.value) friendRecords.value = friendStats
   } catch (e) {
     errorMsg.value = '달별 데이터를 불러오지 못했습니다.'
     console.error(e)
@@ -144,7 +142,7 @@ async function fetchPeriod() {
   errorMsg.value = null
   try {
     const res = await getPeriodStats(targetUserId.value, appliedFrom.value, appliedTo.value)
-    const { summary, chart, friendStats } = res.data
+    const { summary, chart } = res.data.data
 
     periodStatsData.value = formatSummary(summary)
 
@@ -159,8 +157,6 @@ async function fetchPeriod() {
         distance: d.distanceKm,
       }
     })
-
-    if (!selectedFriendId.value) friendRecords.value = friendStats
   } catch (e) {
     errorMsg.value = '기간별 데이터를 불러오지 못했습니다.'
     console.error(e)
@@ -231,6 +227,29 @@ function resetToMyStats() {
   fetchStats()
 }
 
+// ── 친구 목록 로드 ────────────────────────────────────────
+async function fetchFriendList() {
+  let cursorName = null
+  let cursorId = null
+  const all = []
+  while (true) {
+    const res = await getFriendList(cursorName, cursorId)
+    const { friends, hasNext, nextCursorName, nextCursorId } = res.data.data
+    friends.forEach((f) =>
+      all.push({
+        userId: f.friendId,
+        nickname: f.friendName,
+        profileImage: f.friendProfileImage,
+        totalDistanceKm: 0,
+      }),
+    )
+    if (!hasNext) break
+    cursorName = nextCursorName
+    cursorId = nextCursorId
+  }
+  friendRecords.value = all
+}
+
 // ── 친구 기록 ─────────────────────────────────────────────
 const friendSearchQuery = ref('')
 
@@ -251,7 +270,13 @@ watch(friendSearchQuery, () => {
 const sentinel = ref(null)
 let observer = null
 
-onMounted(() => {
+onMounted(async () => {
+  // userId가 없으면 먼저 채우기
+  if (!authStore.userId) {
+    const res = await getMyInfo()
+    authStore.setUserId(res.data.data.userId)
+  }
+  fetchFriendList()
   fetchStats()
 
   observer = new IntersectionObserver((entries) => {
@@ -463,7 +488,8 @@ const friendPanelTitle = computed(() => {
             </button>
           </div>
           <div v-if="selectedFriendId" class="selected-friend-banner">
-            {{ visibleFriends.find((f) => f.userId === selectedFriendId)?.nickname ?? '친구' }}의 통계를 보는 중
+            {{ visibleFriends.find((f) => f.userId === selectedFriendId)?.nickname ?? '친구' }}의
+            통계를 보는 중
           </div>
           <div class="friends-search-row">
             <div class="friends-search-box">
@@ -499,7 +525,9 @@ const friendPanelTitle = computed(() => {
                 <UserAvatar :src="friend.profileImage" :alt="friend.nickname" :size="12" />
               </div>
               <span class="friend-name">{{ friend.nickname }}</span>
-              <span class="friend-distance">{{ friend.totalDistanceKm ?? friend.totalDistance ?? 0 }} km</span>
+              <span class="friend-distance"
+                >{{ friend.totalDistanceKm ?? friend.totalDistance ?? 0 }} km</span
+              >
             </li>
             <li
               v-if="visibleCount < filteredFriendRecords.length"
