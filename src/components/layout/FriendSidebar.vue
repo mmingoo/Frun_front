@@ -28,6 +28,7 @@ async function loadMoreFriends() {
   if (isLoadingFriends.value || !hasMoreFriends.value) return
   isLoadingFriends.value = true
   try {
+    console.log('cursorName:', nextCursorName.value, 'cursorId:', nextCursorId.value)
     const res = await getFriendList(
       nextCursorName.value ?? undefined,
       nextCursorId.value ?? undefined,
