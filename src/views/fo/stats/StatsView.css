@@ -155,9 +155,11 @@
   border: 1px solid #edf0f7;
   border-radius: 16px;
   padding: 24px;
-  min-height: 240px;
+  min-height: 360px;
   min-width: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-inner {
@@ -166,6 +168,7 @@
   align-items: center;
   gap: 16px;
   width: 100%;
+  flex: 1;
 }
 
 /* ── 막대 차트 ── */
@@ -175,6 +178,7 @@
   width: 100%;
   gap: 6px;
   margin-top: 16px;
+  flex: 1;
 }
 
 .y-axis {
@@ -182,7 +186,7 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
-  height: 180px;
+  height: 100%;
   padding: 0 0 18px;
   flex-shrink: 0;
   width: 30px;
@@ -197,6 +201,7 @@
 .chart-body {
   flex: 1;
   position: relative;
+  height: 100%;
 }
 
 .grid-layer {
@@ -223,7 +228,7 @@
   align-items: flex-end;
   gap: 8px;
   width: 100%;
-  height: 180px;
+  height: 100%;
   padding: 0 4px;
   position: relative;
   z-index: 1;
@@ -260,6 +265,7 @@
   align-items: flex-end;
   justify-content: center;
   flex: 1;
+  height: 100%;
 }
 
 .bar {
@@ -284,6 +290,7 @@
   width: 100%;
   min-width: 0;
   gap: 6px;
+  flex: 1;
 }
 
 .monthly-y-axis {
@@ -291,7 +298,7 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
-  height: 180px;
+  height: 260px;
   padding: 28px 0 18px;
   flex-shrink: 0;
   width: 30px;
@@ -361,7 +368,7 @@
   display: flex;
   align-items: flex-end;
   gap: 4px;
-  height: 180px;
+  height: 260px;
   padding: 0 4px;
   position: relative;
 }
@@ -376,7 +383,7 @@
 /* Y축: week-header 없으므로 top padding 제거, 하단은 label 2줄 높이만큼 */
 .period-y-axis {
   padding: 0 0 36px;
-  height: 214px; /* bar 영역(140px) + 여유 + label 2줄(36px) */
+  height: 294px; /* bar 영역(220px) + 여유 + label 2줄(36px) */
 }
 
 /* 기간별 bar 섹션: chart-scroll 직접 자식 → width:max-content 상속으로 스크롤 보장 */
@@ -385,7 +392,7 @@
   align-items: flex-end;
   gap: 6px;
   padding: 0 4px;
-  height: 214px; /* 막대 최대 140px + 상단 여유 38px + label 2줄 36px */
+  height: 294px; /* 막대 최대 220px + 상단 여유 38px + label 2줄 36px */
   position: relative;
 }
 
@@ -532,8 +539,8 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-height: 178px; /* 아이템 28px × 6 + gap 2px × 5 = 178px */
+  gap: 4px;
+  max-height: 280px; /* 아이템 42px × 6 + gap 4px × 5 = 272px */
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #dde3ed transparent;
@@ -556,14 +563,14 @@
 .friends-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  border-radius: 6px;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
   background: #f7f8fc;
   cursor: pointer;
   transition: background 0.15s;
   flex-shrink: 0;
-  height: 28px;
+  height: 42px;
   box-sizing: border-box;
 }
 
@@ -588,8 +595,8 @@
 }
 
 .friend-avatar {
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: #edf0f7;
   border: 1px solid #e2e8f0;
@@ -608,7 +615,7 @@
 
 .friend-name {
   flex: 1;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   color: #2d3748;
 }

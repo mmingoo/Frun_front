@@ -7,7 +7,7 @@ defineProps({
 </script>
 
 <template>
-  <img v-if="src" :src="src" :alt="alt" />
+  <img v-if="src" :src="src" :alt="alt" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
   <svg
     v-else
     :width="size"

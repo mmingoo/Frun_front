@@ -5,9 +5,16 @@ import { addLike, cancelLike, deleteRunningLog, getRunningLogDetail } from '@/ap
 import { BASE_URL } from '@/api/index.js'
 import NavBar from '@/components/layout/NavBar.vue'
 import FriendSidebar from '@/components/layout/FriendSidebar.vue'
-import ReportModal from '@/components/common/ReportModal.vue'
 import { getMyInfo } from '@/api/user.js'
 import { useAuthStore } from '@/stores/auth.js'
+import {
+  getComment,
+  getReply,
+  saveComment,
+  saveReply,
+  updateComment,
+  deleteCommentApi,
+} from '@/api/comment'
 
 const router = useRouter()
 const route = useRoute()
@@ -16,17 +23,23 @@ const route = useRoute()
 const post = ref(null)
 const isLoading = ref(true)
 const errorMsg = ref('')
-
 const auth = useAuthStore()
 
 // ── API 호출 ───────────────────────────────────────────────
 onMounted(async () => {
-  if (!auth.userId) {
+  if (!auth.userId || !auth.nickname) {
     const res = await getMyInfo()
     auth.setUserId(res.data.data.userId)
+    auth.setNickname(res.data.data.nickName)
+    if (res.data.data.profileImageUrl) {
+      auth.setProfileImage(`${BASE_URL}${res.data.data.profileImageUrl}`)
+    }
   }
   const { runningLogId, authorId } = route.params
+
+  // 러닝일지 조회
   try {
+    // 러닝일지 정보 조회
     const res = await getRunningLogDetail(runningLogId, authorId)
     const d = res.data.data
 
@@ -49,11 +62,29 @@ onMounted(async () => {
     }
   } catch (e) {
     const status = e.response?.status
-    if (status === 403) errorMsg.value = '친구가 아니어서 조회할 수 없습니다.'
-    else if (status === 404) errorMsg.value = '존재하지 않는 러닝 일지입니다.'
+    if (status === 404) errorMsg.value = '존재하지 않는 러닝 일지입니다.'
     else errorMsg.value = '불러오기에 실패했습니다.'
   } finally {
     isLoading.value = false
+  }
+
+  //댓글 로딩
+  try {
+    const res = await getComment(post.value.runningLogId)
+    comments.value = res.data.data.contents.map((c) => ({
+      id: c.commentId,
+      authorId: c.userId,
+      nickname: c.nickname,
+      profileImage: c.profileImageUrl ? `${BASE_URL}${c.profileImageUrl}` : null,
+      content: c.content,
+      createdAt: c.createdAt?.slice(0, 16).replace('T', ' ') ?? '',
+      replyCount: c.replyCount,
+      replies: [],
+      showReplyInput: false,
+      replyInput: '',
+    }))
+  } catch (e) {
+    console.log('댓글 불러오기 실패 : ', e)
   }
 })
 
@@ -127,77 +158,213 @@ async function confirmDelete() {
   }
 }
 
-// ── 댓글 (목 — 추후 API 연동) ─────────────────────────────
+//댓글
 const comments = ref([])
 const newComment = ref('')
 
-function submitComment() {
+// 댓글 달기
+async function submitComment() {
   const text = newComment.value.trim()
-  if (!text || text.length > 250) return
-  comments.value.push({
-    id: Date.now(),
-    authorId: auth.userId,
-    nickname: '나',
-    profileImage: null,
-    content: text,
-    createdAt: '방금',
-    replies: [],
-    showReplies: false,
-    replyInput: '',
-    showReplyInput: false,
-  })
-  newComment.value = ''
+
+  // 댓글 200자 제한
+  if (!text || text.length > 200) return
+
+  try {
+    // 댓글 저장
+    const res = await saveComment(text, post.value.runningLogId)
+
+    // 서버 저장 후 화면 리스트에 댓글 추가
+    comments.value.push({
+      id: res.data.data,
+      authorId: auth.userId,
+      nickname: auth.nickname ?? '',
+      profileImage: auth.profileImage ?? null,
+      content: text,
+      createdAt: '방금',
+      replyCount: 0,
+      replies: [],
+      showReplyInput: false,
+      replyInput: '',
+    })
+
+    // 입력창 초기화
+    newComment.value = ''
+  } catch (e) {
+    console.error('댓글 저장 실패 : ', e)
+    alert('댓글 저장에 실패했습니다.')
+  }
 }
+
+// 댓글/답글 삭제 확인 모달
+const deletingTarget = ref(null) // { type: 'comment'|'reply', commentId, replyId? }
 
 function deleteComment(commentId) {
-  const idx = comments.value.findIndex((c) => c.id === commentId)
-  if (idx !== -1) comments.value.splice(idx, 1)
-}
-
-function toggleReplyInput(comment) {
-  comment.showReplyInput = !comment.showReplyInput
-}
-
-function submitReply(comment) {
-  const text = comment.replyInput.trim()
-  if (!text || text.length > 250) return
-  comment.replies.push({
-    id: Date.now(),
-    authorId: auth.userId,
-    nickname: '나',
-    profileImage: null,
-    content: text,
-    createdAt: '방금',
-  })
-  comment.replyInput = ''
-  comment.showReplyInput = false
-  comment.showReplies = true
+  deletingTarget.value = { type: 'comment', commentId }
 }
 
 function deleteReply(commentId, replyId) {
-  const comment = comments.value.find((c) => c.id === commentId)
-  if (!comment) return
-  const idx = comment.replies.findIndex((r) => r.id === replyId)
-  if (idx !== -1) comment.replies.splice(idx, 1)
+  deletingTarget.value = { type: 'reply', commentId, replyId }
+}
+
+async function confirmDeleteComment() {
+  const target = deletingTarget.value
+  if (!target) return
+  try {
+    const id = target.type === 'comment' ? target.commentId : target.replyId
+    await deleteCommentApi(id)
+    if (target.type === 'comment') {
+      const idx = comments.value.findIndex((c) => c.id === target.commentId)
+      if (idx !== -1) comments.value.splice(idx, 1)
+    } else {
+      const comment = comments.value.find((c) => c.id === target.commentId)
+      if (comment) {
+        const idx = comment.replies.findIndex((r) => r.id === target.replyId)
+        if (idx !== -1) comment.replies.splice(idx, 1)
+      }
+    }
+  } catch (e) {
+    console.error('삭제 실패 : ', e)
+    alert('삭제에 실패했습니다.')
+  } finally {
+    deletingTarget.value = null
+  }
+}
+
+async function toggleReplyInput(comment) {
+  comment.showReplyInput = !comment.showReplyInput
+  if (comment.showReplyInput && comment.replyCount > 0 && !comment.repliesLoaded) {
+    await loadReplies(comment)
+  } else if (comment.showReplyInput && comment.repliesLoaded) {
+    comment.showReplies = true
+  }
+}
+
+// 답글 목록 펼치기 (첫 로드 + 무한 스크롤)
+async function loadReplies(comment) {
+  if (comment.repliesLoaded) {
+    comment.showReplies = !comment.showReplies
+    if (!comment.showReplies) comment.showReplyInput = false
+    return
+  }
+  try {
+    const res = await getReply(post.value.runningLogId, comment.id)
+    const data = res.data.data
+    comment.replies = data.contents.map((r) => ({
+      id: r.commentId,
+      authorId: r.userId,
+      nickname: r.nickname,
+      profileImage: r.profileImageUrl ? `${BASE_URL}${r.profileImageUrl}` : null,
+      content: r.content,
+      createdAt: r.createdAt?.slice(0, 16).replace('T', ' ') ?? '',
+    }))
+    comment.replyHasNext = data.hasNext
+    comment.replyCursor = data.nextCursor ?? null
+    comment.repliesLoaded = true
+    comment.showReplies = true
+  } catch (e) {
+    console.log('답글 불러오기 실패 : ', e)
+  }
+}
+
+async function loadMoreReplies(comment) {
+  if (!comment.replyHasNext || comment.replyLoadingMore) return
+  comment.replyLoadingMore = true
+  try {
+    const res = await getReply(post.value.runningLogId, comment.id, comment.replyCursor)
+    const data = res.data.data
+    comment.replies.push(
+      ...data.contents.map((r) => ({
+        id: r.commentId,
+        authorId: r.userId,
+        nickname: r.nickname,
+        profileImage: r.profileImageUrl ? `${BASE_URL}${r.profileImageUrl}` : null,
+        content: r.content,
+        createdAt: r.createdAt?.slice(0, 16).replace('T', ' ') ?? '',
+      })),
+    )
+    comment.replyHasNext = data.hasNext
+    comment.replyCursor = data.nextCursor ?? null
+  } catch (e) {
+    console.log('답글 더보기 실패 : ', e)
+  } finally {
+    comment.replyLoadingMore = false
+  }
+}
+
+//답글 달기
+async function submitReply(comment) {
+  const text = comment.replyInput.trim()
+  if (!text || text.length > 200) return
+
+  try {
+    const res = await saveReply(text, post.value.runningLogId, comment.id)
+    comment.replies.push({
+      id: res.data.data,
+      authorId: auth.userId,
+      nickname: auth.nickname ?? '',
+      profileImage: auth.profileImage ?? null,
+      content: text,
+      createdAt: '방금',
+    })
+
+    console.log(auth.profileImage)
+    comment.replyCount++
+    comment.replyInput = ''
+    comment.showReplyInput = false
+    comment.showReplies = true
+  } catch (e) {
+    console.log('답글 저장 실패 : ', e)
+    alert('답글 저장 실패')
+  }
+}
+
+// 댓글/답글 수정
+const editingId = ref(null)
+const editingContent = ref('')
+
+function startEdit(id, content) {
+  editingId.value = id
+  editingContent.value = content
+}
+
+function cancelEdit() {
+  editingId.value = null
+  editingContent.value = ''
+}
+
+async function submitEdit() {
+  const text = editingContent.value.trim()
+  if (!text || text.length > 200) return
+
+  try {
+    await updateComment(editingId.value, text)
+
+    // 댓글에서 찾기
+    const comment = comments.value.find((c) => c.id === editingId.value)
+    if (comment) {
+      comment.content = text
+      cancelEdit()
+      return
+    }
+
+    // 답글에서 찾기
+    for (const c of comments.value) {
+      const reply = c.replies?.find((r) => r.id === editingId.value)
+      if (reply) {
+        reply.content = text
+        cancelEdit()
+        return
+      }
+    }
+  } catch (e) {
+    console.error('수정 실패 : ', e)
+    alert('수정에 실패했습니다.')
+  }
 }
 
 const totalCommentCount = computed(() =>
-  comments.value.reduce((sum, c) => sum + 1 + c.replies.length, 0),
+  comments.value.reduce((sum, c) => sum + 1 + (c.replies?.length || 0), 0),
 )
-
-// ── 신고 ──────────────────────────────────────────────────
-const showReportModal = ref(false)
-const reportTarget = ref(null)
-
-function openReport(type, id) {
-  reportTarget.value = { type, id }
-  showReportModal.value = true
-}
-
-function submitReport() {
-  // TODO: 신고 API 연동
-  showReportModal.value = false
-}
 </script>
 
 <template>
@@ -260,13 +427,6 @@ function submitReport() {
                     삭제
                   </button>
                 </div>
-                <button
-                  v-if="!isOwner"
-                  class="report-link"
-                  @click.stop="openReport('post', post.runningLogId)"
-                >
-                  신고
-                </button>
               </div>
 
               <!-- 이미지 슬라이더 -->
@@ -381,7 +541,11 @@ function submitReport() {
                 <div v-for="comment in comments" :key="comment.id" class="comment-block">
                   <!-- 댓글 -->
                   <div class="comment-item">
-                    <div class="comment-avatar">
+                    <div
+                      class="comment-avatar"
+                      style="cursor: pointer"
+                      @click="router.push(`/mypage/${comment.authorId}`)"
+                    >
                       <img
                         v-if="comment.profileImage"
                         :src="comment.profileImage"
@@ -402,49 +566,70 @@ function submitReport() {
                     </div>
                     <div class="comment-body">
                       <div class="comment-meta">
-                        <span class="comment-author">{{ comment.nickname }}</span>
+                        <span
+                          class="comment-author"
+                          style="cursor: pointer"
+                          @click="router.push(`/mypage/${comment.authorId}`)"
+                          >{{ comment.nickname }}</span
+                        >
                         <span class="comment-date">{{ comment.createdAt }}</span>
+                        <template v-if="comment.authorId === auth.userId">
+                          <button
+                            class="text-btn text-btn-edit"
+                            @click="startEdit(comment.id, comment.content)"
+                          >
+                            수정
+                          </button>
+                          <button
+                            class="text-btn text-btn-delete"
+                            @click="deleteComment(comment.id)"
+                          >
+                            삭제
+                          </button>
+                        </template>
                       </div>
-                      <p class="comment-text">{{ comment.content }}</p>
+                      <!-- 수정 모드 -->
+                      <div v-if="editingId === comment.id" class="edit-input-wrap">
+                        <textarea
+                          v-model="editingContent"
+                          class="edit-textarea"
+                          maxlength="200"
+                          @keyup.enter.exact="submitEdit"
+                        />
+                        <div class="edit-footer">
+                          <span class="char-count" :class="{ warn: editingContent.length >= 180 }">
+                            {{ editingContent.length }}/200
+                          </span>
+                          <div class="edit-btns">
+                            <button class="text-btn" @click="cancelEdit">취소</button>
+                            <button class="text-btn text-btn-edit" @click="submitEdit">완료</button>
+                          </div>
+                        </div>
+                      </div>
+                      <p v-else class="comment-text">{{ comment.content }}</p>
                       <div class="comment-actions">
                         <button class="text-btn" @click="toggleReplyInput(comment)">
                           답글 달기
                         </button>
                         <button
-                          v-if="comment.authorId !== auth.userId && !isOwner"
-                          class="text-btn text-btn-report"
-                          @click="openReport('comment', comment.id)"
+                          v-if="comment.replyCount > 0"
+                          class="text-btn"
+                          @click="loadReplies(comment)"
                         >
-                          신고
-                        </button>
-                        <button
-                          v-if="comment.authorId === auth.userId"
-                          class="text-btn text-btn-delete"
-                          @click="deleteComment(comment.id)"
-                        >
-                          삭제
+                          {{ comment.showReplies ? '답글 숨기기' : `답글 ${comment.replyCount}개` }}
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  <!-- 답글 입력 -->
-                  <div v-if="comment.showReplyInput" class="reply-input-wrap">
-                    <input
-                      v-model="comment.replyInput"
-                      type="text"
-                      placeholder="답글을 입력하세요..."
-                      class="reply-input"
-                      maxlength="250"
-                      @keyup.enter="submitReply(comment)"
-                    />
-                    <button class="reply-submit-btn" @click="submitReply(comment)">등록</button>
-                  </div>
-
                   <!-- 답글 목록 -->
-                  <div v-if="comment.replies.length > 0" class="reply-list">
+                  <div v-if="comment.showReplies && comment.replies.length > 0" class="reply-list">
                     <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
-                      <div class="comment-avatar reply-avatar">
+                      <div
+                        class="comment-avatar reply-avatar"
+                        style="cursor: pointer"
+                        @click="router.push(`/mypage/${reply.authorId}`)"
+                      >
                         <img
                           v-if="reply.profileImage"
                           :src="reply.profileImage"
@@ -463,45 +648,106 @@ function submitReport() {
                           <circle cx="12" cy="7" r="4" />
                         </svg>
                       </div>
+
                       <div class="comment-body">
                         <div class="comment-meta">
-                          <span class="comment-author">{{ reply.nickname }}</span>
+                          <span
+                            class="comment-author"
+                            style="cursor: pointer"
+                            @click="router.push(`/mypage/${reply.authorId}`)"
+                            >{{ reply.nickname }}</span
+                          >
                           <span class="comment-date">{{ reply.createdAt }}</span>
+                          <template v-if="reply.authorId === auth.userId">
+                            <button
+                              class="text-btn text-btn-edit"
+                              @click="startEdit(reply.id, reply.content)"
+                            >
+                              수정
+                            </button>
+                            <button
+                              class="text-btn text-btn-delete"
+                              @click="deleteReply(comment.id, reply.id)"
+                            >
+                              삭제
+                            </button>
+                          </template>
                         </div>
-                        <p class="comment-text">{{ reply.content }}</p>
-                        <div class="comment-actions">
-                          <button
-                            auth.userId
-                            v-if="reply.authorId !== auth.userId && !isOwner"
-                            class="text-btn text-btn-report"
-                            @click="openReport('reply', reply.id)"
-                          >
-                            신고
-                          </button>
-                          <button
-                            v-if="reply.authorId === auth.userId"
-                            class="text-btn text-btn-delete"
-                            @click="deleteReply(comment.id, reply.id)"
-                          >
-                            삭제
-                          </button>
+                        <!-- 수정 모드 -->
+                        <div v-if="editingId === reply.id" class="edit-input-wrap">
+                          <textarea
+                            v-model="editingContent"
+                            class="edit-textarea"
+                            maxlength="200"
+                            @keyup.enter.exact="submitEdit"
+                          />
+                          <div class="edit-footer">
+                            <span
+                              class="char-count"
+                              :class="{ warn: editingContent.length >= 180 }"
+                            >
+                              {{ editingContent.length }}/200
+                            </span>
+                            <div class="edit-btns">
+                              <button class="text-btn" @click="cancelEdit">취소</button>
+                              <button class="text-btn text-btn-edit" @click="submitEdit">
+                                완료
+                              </button>
+                            </div>
+                          </div>
                         </div>
+                        <p v-else class="comment-text">{{ reply.content }}</p>
                       </div>
                     </div>
+                    <!-- 답글 더보기 -->
+                    <button
+                      v-if="comment.replyHasNext"
+                      class="text-btn"
+                      :disabled="comment.replyLoadingMore"
+                      @click="loadMoreReplies(comment)"
+                    >
+                      {{ comment.replyLoadingMore ? '불러오는 중…' : '답글 더보기' }}
+                    </button>
+                  </div>
+
+                  <!-- 답글 입력 (reply-list 바깥) -->
+                  <div v-if="comment.showReplyInput" class="reply-input-wrap">
+                    <div class="input-with-counter">
+                      <input
+                        v-model="comment.replyInput"
+                        type="text"
+                        placeholder="답글을 입력하세요..."
+                        class="reply-input"
+                        maxlength="200"
+                        @keyup.enter="submitReply(comment)"
+                      />
+                      <span
+                        class="input-char-count"
+                        :class="{ warn: comment.replyInput.length >= 180 }"
+                      >
+                        {{ comment.replyInput.length }}/200
+                      </span>
+                    </div>
+                    <button class="reply-submit-btn" @click="submitReply(comment)">등록</button>
                   </div>
                 </div>
               </div>
 
               <!-- 댓글 입력 -->
               <div class="comment-input-area">
-                <input
-                  v-model="newComment"
-                  type="text"
-                  placeholder="댓글을 입력하세요..."
-                  class="comment-input"
-                  maxlength="250"
-                  @keyup.enter="submitComment"
-                />
+                <div class="input-with-counter">
+                  <input
+                    v-model="newComment"
+                    type="text"
+                    placeholder="댓글을 입력하세요..."
+                    class="comment-input"
+                    maxlength="200"
+                    @keyup.enter="submitComment"
+                  />
+                  <span class="input-char-count" :class="{ warn: newComment.length >= 180 }">
+                    {{ newComment.length }}/200
+                  </span>
+                </div>
                 <button
                   class="comment-submit-btn"
                   :disabled="!newComment.trim()"
@@ -531,7 +777,6 @@ function submitReport() {
     <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
       <div class="modal">
         <h3 class="modal-title">러닝일지를 삭제하시겠습니까?</h3>
-        <p class="modal-desc">삭제된 일지는 복구할 수 없습니다.</p>
         <div class="modal-actions">
           <button class="modal-btn modal-cancel" @click="showDeleteConfirm = false">취소</button>
           <button class="modal-btn modal-confirm" @click="confirmDelete">삭제</button>
@@ -539,8 +784,16 @@ function submitReport() {
       </div>
     </div>
 
-    <!-- ── 신고 모달 ── -->
-    <ReportModal v-model:show="showReportModal" @submit="submitReport" />
+    <!-- ── 댓글/답글 삭제 확인 모달 ── -->
+    <div v-if="deletingTarget" class="modal-overlay" @click.self="deletingTarget = null">
+      <div class="modal">
+        <h3 class="modal-title">댓글을 삭제하시겠습니까?</h3>
+        <div class="modal-actions">
+          <button class="modal-btn modal-cancel" @click="deletingTarget = null">취소</button>
+          <button class="modal-btn modal-confirm" @click="confirmDeleteComment">삭제</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

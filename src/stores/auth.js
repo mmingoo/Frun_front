@@ -6,6 +6,7 @@ export const useAuthStore = defineStore('auth', {
     accessToken: null, // 메모리에만 보관 (새로고침 시 reissue로 복구)
     profileImage: null,
     userId: null,
+    nickname: null,
   }),
 
   actions: {
@@ -18,11 +19,15 @@ export const useAuthStore = defineStore('auth', {
     setUserId(id) {
       this.userId = id
     },
+    setNickname(nickname) {
+      this.nickname = nickname
+    },
     logout() {
       this.hasNickname = null
       this.accessToken = null
       this.profileImage = null
       this.userId = null
+      this.nickname = null
     },
   },
 })

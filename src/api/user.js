@@ -4,6 +4,7 @@ export function getUserPageInfo(userId) {
   return api.get(`/api/v1/users/${userId}/mypage`)
 }
 
+// 프로필 이미지, userId 반환
 export function getMyInfo() {
   return api.get('/api/v1/users/me')
 }

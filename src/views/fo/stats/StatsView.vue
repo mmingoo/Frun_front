@@ -4,6 +4,7 @@ import NavBar from '@/components/layout/NavBar.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { getWeeklyStats, getMonthlyStats, getPeriodStats } from '@/api/stats'
 import { getFriendList } from '@/api/friend'
+import { BASE_URL } from '@/api/index'
 import { useAuthStore } from '@/stores/auth'
 import { getMyInfo } from '@/api/user'
 
@@ -239,11 +240,11 @@ async function fetchFriendList() {
       all.push({
         userId: f.friendId,
         nickname: f.friendName,
-        profileImage: f.friendProfileImage,
+        profileImage: f.friendProfileImage ? BASE_URL + f.friendProfileImage : null,
         totalDistanceKm: 0,
       }),
     )
-    if (!hasNext) break
+    if (!hasNext || !nextCursorId || nextCursorId === cursorId) break
     cursorName = nextCursorName
     cursorId = nextCursorId
   }
@@ -270,6 +271,10 @@ watch(friendSearchQuery, () => {
 const sentinel = ref(null)
 let observer = null
 
+watch(sentinel, (el) => {
+  if (el && observer) observer.observe(el)
+})
+
 onMounted(async () => {
   // userId가 없으면 먼저 채우기
   if (!authStore.userId) {
@@ -280,11 +285,10 @@ onMounted(async () => {
   fetchStats()
 
   observer = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting && visibleCount.value < friendRecords.value.length) {
-      visibleCount.value = Math.min(visibleCount.value + 5, friendRecords.value.length)
+    if (entries[0].isIntersecting && visibleCount.value < filteredFriendRecords.value.length) {
+      visibleCount.value = Math.min(visibleCount.value + 5, filteredFriendRecords.value.length)
     }
   })
-  if (sentinel.value) observer.observe(sentinel.value)
 })
 
 onBeforeUnmount(() => {
@@ -393,7 +397,7 @@ const friendPanelTitle = computed(() => {
                           <div class="bar-wrap">
                             <div
                               class="bar"
-                              :style="{ height: (day.distance / monthlyMaxDistance) * 140 + 'px' }"
+                              :style="{ height: (day.distance / monthlyMaxDistance) * 220 + 'px' }"
                             >
                               <span v-if="day.distance > 0" class="bar-value">{{
                                 day.distance
@@ -428,7 +432,7 @@ const friendPanelTitle = computed(() => {
                         <div class="period-bar-wrap">
                           <div
                             class="bar"
-                            :style="{ height: (item.distance / periodMaxDistance) * 140 + 'px' }"
+                            :style="{ height: (item.distance / periodMaxDistance) * 220 + 'px' }"
                           >
                             <span v-if="item.distance > 0" class="bar-value">{{
                               item.distance
@@ -459,7 +463,7 @@ const friendPanelTitle = computed(() => {
                       <div class="bar-wrap">
                         <div
                           class="bar"
-                          :style="{ height: (item.distance / maxDistance) * 140 + 'px' }"
+                          :style="{ height: (item.distance / maxDistance) * 85 + '%' }"
                         >
                           <span v-if="item.distance > 0" class="bar-value">{{
                             item.distance

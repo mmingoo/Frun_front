@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import NavBar from '@/components/layout/NavBar.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -9,6 +9,7 @@ import { getUserRunningLogs } from '@/api/running'
 import { getUserPageInfo, getMyInfo, updatUserProfile } from '@/api/user'
 import { BASE_URL } from '@/api/index.js'
 import { useAuthStore } from '@/stores/auth'
+import { deleteFriend, requestFriend, acceptFriend, rejectFriend } from '@/api/friend'
 
 const router = useRouter()
 const route = useRoute()
@@ -19,6 +20,26 @@ const hasNext = ref(true)
 const cursorId = ref(null)
 const posts = ref([])
 const isLoadingProfile = ref(false)
+const showDeleteConfirm = ref(false)
+const sidebarKey = ref(0)
+const postsSentinelRef = ref(null)
+let postsObserver = null
+
+function setupPostsObserver() {
+  if (!postsSentinelRef.value) return
+  postsObserver?.disconnect()
+  postsObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) loadPosts()
+    },
+    { threshold: 0.1 },
+  )
+  postsObserver.observe(postsSentinelRef.value)
+}
+
+onBeforeUnmount(() => {
+  postsObserver?.disconnect()
+})
 
 const stats = computed(() => ({
   totalDistance: profile.value?.totalDistance ?? 0,
@@ -37,13 +58,15 @@ async function saveEdit({ bio, imageFile, imagePreview }) {
     console.error('프로필 수정 실패', e)
   }
 }
-function initPage() {
+async function initPage() {
+  postsObserver?.disconnect()
   posts.value = []
   hasNext.value = true
   cursorId.value = null
   profile.value = null
   loadProfile()
-  loadPosts()
+  await loadPosts()
+  setupPostsObserver()
 }
 
 onMounted(() => initPage())
@@ -81,7 +104,7 @@ async function loadProfile() {
       bio: d.bio ?? '',
       friendCount: d.friendCount,
       isOwner: d.owner,
-      isFriend: d.friend ?? false,
+      friendStatus: d.friendRequestStatus ?? 'NONE',
       totalCount: d.totalRunCount,
       totalDistance: d.totalDistanceKm,
       avgPace: d.avgPace,
@@ -101,6 +124,10 @@ async function loadPosts() {
     const userId = route.params.id || auth.userId
     const res = await getUserRunningLogs(userId, cursorId.value)
     const { feeds, hasNext: next, nextCursorId } = res.data.data
+    if (nextCursorId != null && nextCursorId === cursorId.value) {
+      hasNext.value = false
+      return
+    }
     const normalized = feeds.map((f) => ({
       id: f.runningLogId,
       authorId: f.authorId,
@@ -115,7 +142,7 @@ async function loadPosts() {
 
     posts.value.push(...normalized)
     hasNext.value = next
-    cursorId.value = nextCursorId
+    cursorId.value = nextCursorId ?? null
   } catch (e) {
     console.log('러닝 목록 로딩 실패', e)
   } finally {
@@ -133,9 +160,50 @@ function openEdit() {
   showEditModal.value = true
 }
 
-// ── 친구 추가/삭제 ────────────────────────────────────────
-function toggleFriend() {
-  profile.value.isFriend = !profile.value.isFriend
+// ── 친구 추가 ────────────────────────────────────────
+async function handleAddFriend() {
+  try {
+    await requestFriend(profile.value.id)
+    profile.value.friendStatus = 'SENDED'
+  } catch (e) {
+    console.log('친구 추가 실패 : ', e)
+    alert('친구 추가되지 않았습니다.')
+  }
+}
+
+async function handleAcceptFriend() {
+  try {
+    await acceptFriend(profile.value.id)
+    profile.value.friendStatus = 'FRIEND'
+    profile.value.friendCount++
+    sidebarKey.value++
+  } catch (e) {
+    console.log('친구 수락 실패 : ', e)
+    alert('친구 수락에 실패했습니다.')
+  }
+}
+
+async function handleRejectFriend() {
+  try {
+    await rejectFriend(profile.value.id)
+    profile.value.friendStatus = 'NONE'
+  } catch (e) {
+    console.log('친구 거절 실패 : ', e)
+    alert('친구 거절에 실패했습니다.')
+  }
+}
+
+async function confirmDelete() {
+  showDeleteConfirm.value = false
+  try {
+    await deleteFriend(profile.value.id)
+    profile.value.friendStatus = 'NONE'
+    profile.value.friendCount--
+    sidebarKey.value++
+  } catch (e) {
+    console.log('친구삭제 실패 : ', e)
+    alert('친구가 삭제되지 않았습니다.')
+  }
 }
 </script>
 
@@ -145,7 +213,7 @@ function toggleFriend() {
 
     <!-- ── 메인 ── -->
     <div class="page-grid">
-      <FriendSidebar />
+      <FriendSidebar :key="sidebarKey" />
       <div class="main-wrap">
         <!-- ── 프로필 헤더 (인스타그램 스타일) ── -->
         <div class="profile-box">
@@ -166,20 +234,23 @@ function toggleFriend() {
                 <button v-if="profile.isOwner" class="btn-edit" @click="openEdit">
                   프로필 편집
                 </button>
-                <button
-                  v-else-if="!profile.isOwner && profile.isFriend"
-                  class="btn-friend btn-friend-delete"
-                  @click="toggleFriend"
-                >
-                  친구 삭제
-                </button>
-                <button
-                  v-else-if="!profile.isOwner && !profile.isFriend"
-                  class="btn-friend"
-                  @click="toggleFriend"
-                >
-                  친구 추가
-                </button>
+                <template v-else>
+                  <template v-if="profile.friendStatus === 'NONE'">
+                    <button class="btn-friend" @click="handleAddFriend">친구 추가</button>
+                  </template>
+                  <template v-else-if="profile.friendStatus === 'SENDED'">
+                    <button class="btn-friend btn-friend-disabled" disabled>친구요청 중</button>
+                  </template>
+                  <template v-else-if="profile.friendStatus === 'PENDING'">
+                    <button class="btn-friend btn-friend-accept" @click="handleAcceptFriend">수락</button>
+                    <button class="btn-friend btn-friend-delete" @click="handleRejectFriend">거절</button>
+                  </template>
+                  <template v-else-if="profile.friendStatus === 'FRIEND'">
+                    <button class="btn-friend btn-friend-delete" @click.stop="showDeleteConfirm = true">
+                      친구 삭제
+                    </button>
+                  </template>
+                </template>
               </div>
 
               <!-- 게시물 / 친구 / 총 거리 -->
@@ -209,7 +280,7 @@ function toggleFriend() {
         </div>
 
         <!-- ── 게시물 그리드 ── -->
-        <div v-if="posts.length === 0" class="empty-wrap">
+        <div v-if="posts.length === 0 && !isLoadingPosts" class="empty-wrap">
           <svg
             width="36"
             height="36"
@@ -285,6 +356,10 @@ function toggleFriend() {
             </div>
           </div>
         </div>
+
+        <div ref="postsSentinelRef" class="posts-sentinel">
+          <span v-if="isLoadingPosts" class="posts-spinner" />
+        </div>
       </div>
     </div>
 
@@ -295,6 +370,17 @@ function toggleFriend() {
       :bio="profile?.bio"
       @save="saveEdit"
     />
+  </div>
+
+  <!-- ── 삭제 확인 모달 ── -->
+  <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
+    <div class="modal">
+      <h3 class="modal-title">친구를 삭제하시겠습니까?</h3>
+      <div class="modal-actions">
+        <button class="modal-btn modal-cancel" @click="showDeleteConfirm = false">취소</button>
+        <button class="modal-btn modal-confirm" @click="confirmDelete">삭제</button>
+      </div>
+    </div>
   </div>
 </template>
 

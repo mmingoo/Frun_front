@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { addLike, cancelLike, getFeed, reportPost } from '@/api/feed.js'
 import { BASE_URL } from '@/api/index.js'
@@ -23,6 +23,7 @@ onMounted(async () => {
     authStore.setUserId(res.data.data.userId)
   }
   await Promise.all([loadFeed(), loadMyStats()])
+  setupFeedObserver()
 })
 
 function formatPace(sec) {
@@ -82,6 +83,9 @@ const posts = ref([])
 const cursorId = ref(null)
 const hasNext = ref(true)
 const isFeedLoading = ref(false)
+const feedListRef = ref(null)
+const feedSentinelRef = ref(null)
+let feedObserver = null
 
 async function loadFeed() {
   if (isFeedLoading.value || !hasNext.value) return
@@ -89,9 +93,12 @@ async function loadFeed() {
   try {
     const res = await getFeed(cursorId.value)
     const { feeds, hasNext: next, nextCursorId } = res.data.data
+    if (nextCursorId != null && nextCursorId === cursorId.value) {
+      hasNext.value = false
+      return
+    }
     const normalized = feeds.map((f) => ({
       ...f,
-
       id: f.runningLogId,
       authorId: f.userId,
       nickname: f.nickName ?? f.nickname ?? '',
@@ -108,13 +115,29 @@ async function loadFeed() {
     }))
     posts.value.push(...normalized)
     hasNext.value = next
-    cursorId.value = nextCursorId
+    cursorId.value = nextCursorId ?? null
   } catch (e) {
     console.error('피드 로딩 실패', e)
   } finally {
     isFeedLoading.value = false
   }
 }
+
+function setupFeedObserver() {
+  if (!feedSentinelRef.value) return
+  feedObserver?.disconnect()
+  feedObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) loadFeed()
+    },
+    { threshold: 0.1 },
+  )
+  feedObserver.observe(feedSentinelRef.value)
+}
+
+onBeforeUnmount(() => {
+  feedObserver?.disconnect()
+})
 
 function goToDetail(post) {
   router.push(`/feed/${post.id}/${post.authorId}`)
@@ -172,9 +195,11 @@ async function submitReport({ reason, etc }) {
       <FriendSidebar />
 
       <!-- ② 가운데: 피드 -->
-      <main class="feed-col">
-        <div v-if="posts.length === 0" class="feed-empty">친구의 게시글이 없습니다</div>
-        <div v-else class="feed-list">
+      <main ref="feedListRef" class="feed-col">
+        <div v-if="posts.length === 0 && !isFeedLoading" class="feed-empty">
+          친구의 게시글이 없습니다
+        </div>
+        <div class="feed-list">
           <FeedPostCard
             v-for="post in posts"
             :key="post.id"
@@ -184,6 +209,9 @@ async function submitReport({ reason, etc }) {
             @report="openReport"
             @detail="goToDetail"
           />
+        </div>
+        <div ref="feedSentinelRef" class="feed-sentinel">
+          <span v-if="isFeedLoading" class="feed-spinner" />
         </div>
       </main>
 

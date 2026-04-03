@@ -1,3 +1,27 @@
+/* ── 무한스크롤 ── */
+.posts-sentinel {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.posts-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #3b5bdb;
+  border-radius: 50%;
+  animation: posts-spin 0.7s linear infinite;
+}
+
+@keyframes posts-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .page-wrap {
   min-height: 100vh;
   background: #f7f8fc;
@@ -134,6 +158,26 @@
 
 .btn-friend-delete:hover {
   background: #fff5f5;
+}
+
+.btn-friend-accept {
+  background: #3b5bdb;
+  color: #fff;
+}
+
+.btn-friend-accept:hover {
+  background: #2f4ac7;
+}
+
+.btn-friend-disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  border: none;
+  cursor: default;
+}
+
+.btn-friend-disabled:hover {
+  background: #e2e8f0;
 }
 
 .profile-counts {

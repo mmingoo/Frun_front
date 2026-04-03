@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { getFriendList } from '@/api/friend.js'
+import { BASE_URL } from '@/api/index.js'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
@@ -13,7 +14,6 @@ const nextCursorName = ref(null)
 const nextCursorId = ref(null)
 
 const friendSearch = ref('')
-const friendListRef = ref(null)
 const friendSentinelRef = ref(null)
 
 const filteredFriends = computed(() =>
@@ -28,18 +28,28 @@ async function loadMoreFriends() {
   if (isLoadingFriends.value || !hasMoreFriends.value) return
   isLoadingFriends.value = true
   try {
-    const res = await getFriendList(nextCursorName.value, nextCursorId.value)
+    const res = await getFriendList(
+      nextCursorName.value ?? undefined,
+      nextCursorId.value ?? undefined,
+    )
     const { friends, hasNext, nextCursorId: nextId, nextCursorName: nextName } = res.data.data
     visibleFriends.value.push(
       ...friends.map((f) => ({
         id: f.friendId,
         nickname: f.friendName,
-        profileImage: f.friendProfileImage,
+        profileImage: f.friendProfileImage ? `${BASE_URL}${f.friendProfileImage}` : null,
       })),
     )
-    hasMoreFriends.value = hasNext
-    nextCursorId.value = nextId
-    nextCursorName.value = nextName
+    if (!hasNext || (nextId != null && nextId === nextCursorId.value)) {
+      hasMoreFriends.value = false
+      return
+    }
+    console.log(nextId)
+    console.log(nextName)
+    hasMoreFriends.value = true
+    nextCursorId.value = nextId ?? null
+    nextCursorName.value = nextName ?? null
+    console.log()
   } catch (e) {
     console.error('친구 목록 로딩 실패', e)
   } finally {
@@ -47,18 +57,21 @@ async function loadMoreFriends() {
   }
 }
 
+function setupObserver() {
+  if (!friendSentinelRef.value) return
+  friendObserver?.disconnect()
+  friendObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) loadMoreFriends()
+    },
+    { root: null, rootMargin: '0px', threshold: 0 },
+  )
+  friendObserver.observe(friendSentinelRef.value)
+}
+
 onMounted(async () => {
   await loadMoreFriends()
-
-  if (friendSentinelRef.value) {
-    friendObserver = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMoreFriends()
-      },
-      { root: friendListRef.value, threshold: 0.1 },
-    )
-    friendObserver.observe(friendSentinelRef.value)
-  }
+  setupObserver()
 })
 
 onBeforeUnmount(() => {
@@ -90,20 +103,22 @@ onBeforeUnmount(() => {
           placeholder="친구 검색"
         />
       </div>
-      <ul ref="friendListRef" class="friend-list">
+      <ul class="friend-list">
         <li
           v-for="friend in filteredFriends"
           :key="friend.id"
           class="friend-item"
-          @click="router.push(`/mypage/${friend.id}`)"
+          @click="$router.push(`/mypage/${friend.id}`)"
+          style="cursor: pointer"
         >
           <div class="friend-avatar">
             <UserAvatar :src="friend.profileImage" :alt="friend.nickname" :size="15" />
           </div>
           <span class="friend-name">{{ friend.nickname }}</span>
         </li>
+
         <li ref="friendSentinelRef" class="friend-sentinel">
-          <span v-if="isLoadingFriends" class="friend-loading">불러오는 중…</span>
+          <span v-if="isLoadingFriends" class="friend-spinner" />
         </li>
       </ul>
       <button class="friend-add-btn" @click="router.push('/friends')">
@@ -247,9 +262,20 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 
-.friend-loading {
-  font-size: 11px;
-  color: #94a3b8;
+.friend-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #3b5bdb;
+  border-radius: 50%;
+  animation: friend-spin 0.7s linear infinite;
+}
+
+@keyframes friend-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .friend-add-btn {

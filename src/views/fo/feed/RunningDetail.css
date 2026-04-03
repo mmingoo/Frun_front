@@ -131,11 +131,17 @@
 }
 
 .btn-edit {
+  color: #94a3b8;
+}
+.btn-edit:hover {
   color: #3b5bdb;
 }
 
-.btn-delete {
+.btn-delete:hover {
   color: #e53e3e;
+}
+.btn-delete {
+  color: #94a3b8;
 }
 
 /* 스탯 */
@@ -176,7 +182,6 @@
   flex-shrink: 0;
 }
 
-
 .report-link {
   background: none;
   border: none;
@@ -212,9 +217,8 @@
 }
 
 .comment-list {
-  flex: 1;
   overflow-y: auto;
-  max-height: 480px;
+  height: 600px;
   padding: 8px 0;
 }
 
@@ -266,6 +270,14 @@
   margin-bottom: 3px;
 }
 
+.comment-meta .text-btn-edit {
+  margin-left: auto;
+}
+
+.comment-meta .text-btn-delete {
+  margin-left: 0;
+}
+
 .comment-author {
   font-size: 13px;
   font-weight: 700;
@@ -309,7 +321,88 @@
   color: #e53e3e;
 }
 
+.text-btn-delete {
+  color: #94a3b8;
+}
 .text-btn-delete:hover {
+  color: #e53e3e;
+}
+
+.text-btn-edit {
+  color: #94a3b8;
+}
+
+.text-btn-edit:hover {
+  color: #2f4ac0;
+}
+
+/* 수정 입력 */
+.edit-input-wrap {
+  margin: 4px 0 6px;
+}
+
+.edit-textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: #4a5568;
+  font-family: inherit;
+  line-height: 1.5;
+  word-break: break-all;
+  border: 1px solid #3b5bdb;
+  border-radius: 8px;
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.edit-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.edit-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.char-count {
+  font-size: 11px;
+  color: #a0aec0;
+}
+
+.char-count.warn {
+  color: #e53e3e;
+}
+
+/* 입력창 + 글자 수 카운터 */
+.input-with-counter {
+  position: relative;
+  flex: 1;
+}
+
+.input-with-counter .comment-input,
+.input-with-counter .reply-input {
+  width: 100%;
+  padding-right: 56px;
+  box-sizing: border-box;
+}
+
+.input-char-count {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: #a0aec0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.input-char-count.warn {
   color: #e53e3e;
 }
 
@@ -317,11 +410,10 @@
 .reply-input-wrap {
   display: flex;
   gap: 6px;
-  padding: 6px 0 6px 42px;
+  padding: 6px 0 6px 0px;
 }
 
 .reply-input {
-  flex: 1;
   height: 34px;
   border: 1.5px solid #dde3ed;
   border-radius: 8px;
