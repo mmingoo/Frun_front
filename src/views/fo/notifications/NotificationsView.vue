@@ -82,7 +82,8 @@ async function handleAccept(noti) {
     await acceptFriend(noti.senderId)
     noti.friendRequestStatus = 'FRIEND'
   } catch (e) {
-    console.error('친구 요청 수락 실패', e)
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 
@@ -91,7 +92,8 @@ async function handleReject(noti) {
     await rejectFriend(noti.senderId)
     noti.friendRequestStatus = 'REJECTED'
   } catch (e) {
-    console.error('친구 요청 거절 실패', e)
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 </script>

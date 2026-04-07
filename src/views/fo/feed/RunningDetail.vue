@@ -2,9 +2,11 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { addLike, cancelLike, deleteRunningLog, getRunningLogDetail } from '@/api/feed.js'
+import { useReport } from '@/composables/useReport.js'
 import { BASE_URL } from '@/api/index.js'
 import NavBar from '@/components/layout/NavBar.vue'
 import FriendSidebar from '@/components/layout/FriendSidebar.vue'
+import ReportModal from '@/components/common/ReportModal.vue'
 import { getMyInfo } from '@/api/user.js'
 import { useAuthStore } from '@/stores/auth.js'
 import {
@@ -141,7 +143,8 @@ async function confirmDelete() {
   try {
     await deleteRunningLog(post.value.runningLogId)
   } catch (e) {
-    console.log(e.value)
+    const message = e.response?.data?.message
+    alert(message)
   } finally {
     router.push(`/mypage/${auth.userId}`)
   }
@@ -178,7 +181,7 @@ async function loadMoreComments() {
     )
     hasNextComment.value = data.hasNext
     commentCursorId.value = data.nextCursor ?? null
-    totalCommentCount.value = data.totalCount ?? 0
+    totalCommentCount.value = post.value.commentCount ?? 0
   } catch (e) {
     console.log('댓글 불러오기 실패 : ', e)
   } finally {
@@ -229,9 +232,11 @@ async function submitComment() {
 
     // 입력창 초기화
     newComment.value = ''
+    totalCommentCount.value++
+    if (post.value) post.value.commentCount = (post.value.commentCount ?? 0) + 1
   } catch (e) {
-    console.error('댓글 저장 실패 : ', e)
-    alert('댓글 저장에 실패했습니다.')
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 
@@ -254,17 +259,28 @@ async function confirmDeleteComment() {
     await deleteCommentApi(id)
     if (target.type === 'comment') {
       const idx = comments.value.findIndex((c) => c.id === target.commentId)
-      if (idx !== -1) comments.value.splice(idx, 1)
+      if (idx !== -1) {
+        const deleted = comments.value[idx]
+        const deletedTotal = 1 + (deleted.replies?.length ?? 0)
+        comments.value.splice(idx, 1)
+        totalCommentCount.value = Math.max(0, totalCommentCount.value - deletedTotal)
+        if (post.value) post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - deletedTotal)
+      }
     } else {
       const comment = comments.value.find((c) => c.id === target.commentId)
       if (comment) {
         const idx = comment.replies.findIndex((r) => r.id === target.replyId)
-        if (idx !== -1) comment.replies.splice(idx, 1)
+        if (idx !== -1) {
+          comment.replies.splice(idx, 1)
+          comment.replyCount = Math.max(0, (comment.replyCount ?? 0) - 1)
+          totalCommentCount.value = Math.max(0, totalCommentCount.value - 1)
+          if (post.value) post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - 1)
+        }
       }
     }
   } catch (e) {
-    console.error('삭제 실패 : ', e)
-    alert('삭제에 실패했습니다.')
+    const message = e.response?.data?.message
+    alert(message)
   } finally {
     deletingTarget.value = null
   }
@@ -351,9 +367,11 @@ async function submitReply(comment) {
     comment.replyInput = ''
     comment.showReplyInput = false
     comment.showReplies = true
+    totalCommentCount.value++
+    if (post.value) post.value.commentCount = (post.value.commentCount ?? 0) + 1
   } catch (e) {
-    console.log('답글 저장 실패 : ', e)
-    alert('답글 저장 실패')
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 
@@ -396,12 +414,15 @@ async function submitEdit() {
       }
     }
   } catch (e) {
-    console.error('수정 실패 : ', e)
-    alert('수정에 실패했습니다.')
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 
 const totalCommentCount = ref(0)
+
+// ── 신고 ──────────────────────────────────────────────────
+const { showReportModal, openReport, submitReport } = useReport()
 
 // ── 알림에서 특정 댓글로 이동 ─────────────────────────────
 const highlightedCommentId = ref(null)
@@ -418,7 +439,9 @@ async function scrollToTargetComment(targetId) {
     const el = document.getElementById(`comment-${targetId}`)
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      setTimeout(() => { highlightedCommentId.value = null }, 3000)
+      setTimeout(() => {
+        highlightedCommentId.value = null
+      }, 3000)
     }
     return
   }
@@ -439,7 +462,9 @@ async function scrollToTargetComment(targetId) {
       const el = document.getElementById(`reply-${targetId}`)
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        setTimeout(() => { highlightedCommentId.value = null }, 3000)
+        setTimeout(() => {
+          highlightedCommentId.value = null
+        }, 3000)
       }
       return
     }
@@ -453,7 +478,9 @@ async function scrollToTargetComment(targetId) {
         const el = document.getElementById(`reply-${targetId}`)
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          setTimeout(() => { highlightedCommentId.value = null }, 3000)
+          setTimeout(() => {
+            highlightedCommentId.value = null
+          }, 3000)
         }
         return
       }
@@ -522,6 +549,7 @@ async function scrollToTargetComment(targetId) {
                     삭제
                   </button>
                 </div>
+                <button v-else class="btn-report" @click.stop="openReport(post.runningLogId)">신고</button>
               </div>
 
               <!-- 이미지 슬라이더 -->
@@ -634,7 +662,6 @@ async function scrollToTargetComment(targetId) {
 
               <div class="comment-list">
                 <div v-for="comment in comments" :key="comment.id" class="comment-block">
-
                   <!-- 댓글 -->
                   <div
                     :id="`comment-${comment.id}`"
@@ -903,6 +930,9 @@ async function scrollToTargetComment(targetId) {
         </div>
       </div>
     </div>
+
+    <!-- ── 신고 모달 ── -->
+    <ReportModal v-model:show="showReportModal" @submit="submitReport" />
   </div>
 </template>
 

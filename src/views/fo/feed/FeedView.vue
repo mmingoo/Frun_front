@@ -1,10 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { addLike, cancelLike, getFeed, reportPost } from '@/api/feed.js'
+import { addLike, cancelLike, getFeed } from '@/api/feed.js'
+import { useReport } from '@/composables/useReport.js'
 import { BASE_URL } from '@/api/index.js'
 import { getWeeklyStats, getMonthlyStats } from '@/api/stats'
 import { getMyInfo } from '@/api/user'
+import { getNotices } from '@/api/notice.js'
 import { useAuthStore } from '@/stores/auth'
 import './FeedView.css'
 import NavBar from '@/components/layout/NavBar.vue'
@@ -22,7 +24,7 @@ onMounted(async () => {
     const res = await getMyInfo()
     authStore.setUserId(res.data.data.userId)
   }
-  await Promise.all([loadFeed(), loadMyStats()])
+  await Promise.all([loadFeed(), loadMyStats(), loadNotices()])
   setupFeedObserver()
 })
 
@@ -72,6 +74,28 @@ const myStats = ref({})
 const notices = ref([])
 const NOTICE_PAGE_SIZE = 5
 const noticePage = ref(1)
+
+async function loadNotices() {
+  try {
+    let cursorId = null
+    let hasNext = true
+    while (hasNext) {
+      const res = await getNotices(cursorId ?? undefined)
+      const { notices: list, hasNext: next, nextCursorId } = res.data.data
+      notices.value.push(
+        ...list.map((n) => ({
+          id: n.noticeId,
+          title: n.title,
+          createdDate: n.createdDate,
+        })),
+      )
+      hasNext = next
+      cursorId = nextCursorId ?? null
+    }
+  } catch (e) {
+    console.error('공지사항 로딩 실패', e)
+  }
+}
 const noticeTotalPages = computed(() => Math.ceil(notices.value.length / NOTICE_PAGE_SIZE))
 const pagedNotices = computed(() => {
   const start = (noticePage.value - 1) * NOTICE_PAGE_SIZE
@@ -155,7 +179,8 @@ async function toggleLike(post) {
       // 실패 시 롤백
       post.likeCount++
       post.liked = true
-      console.log(e.value)
+      const message = e.response?.data?.message
+      alert(message)
     }
   } else {
     post.likeCount++
@@ -166,22 +191,17 @@ async function toggleLike(post) {
       // 실패 시 롤백
       post.likeCount--
       post.liked = false
-      console.log(e.value)
+      const message = e.response?.data?.message
+      alert(message)
     }
   }
 }
 // ── 신고 ──────────────────────────────────────────────────
-const showReportModal = ref(false)
-const reportPostId = ref(null)
+const { showReportModal, openReport, submitReport } = useReport()
 
-function openReport(postId) {
-  reportPostId.value = postId
-  showReportModal.value = true
-}
-
-async function submitReport({ reason, etc }) {
-  await reportPost(reportPostId.value, reason, etc)
-  showReportModal.value = false
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  return dateStr.slice(0, 16).replace('T', ' ')
 }
 </script>
 
@@ -284,7 +304,8 @@ async function submitReport({ reason, etc }) {
               class="notice-item"
               @click="router.push(`/notices/${notice.id}`)"
             >
-              {{ notice.title }}
+              <span class="notice-title-text">{{ notice.title }}</span>
+              <span class="notice-date">{{ formatDate(notice.createdDate) }}</span>
             </li>
           </ul>
           <div class="notice-pagination">

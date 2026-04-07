@@ -1,7 +1,7 @@
 import api from './index.js'
 
-export function reportPost(postId, reason, etc = '') {
-  return api.post(`/api/v1/feed/${postId}/report`, { reason, etc })
+export function reportPost(runningLogId, reportReason) {
+  return api.post(`/api/v1/reports/${runningLogId}`, { reportReason })
 }
 
 export function getFeed(cursorId, size = 10) {

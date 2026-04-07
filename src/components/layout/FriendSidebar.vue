@@ -82,7 +82,8 @@ async function executeDelete() {
     await deleteFriend(friend.id)
     visibleFriends.value = visibleFriends.value.filter((f) => f.id !== friend.id)
   } catch (e) {
-    console.error('친구 삭제 실패', e)
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 
@@ -132,7 +133,14 @@ onBeforeUnmount(() => {
           </div>
           <span class="friend-name">{{ friend.nickname }}</span>
           <button class="friend-delete-btn" @click.stop="confirmDelete(friend)" title="친구 삭제">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -163,7 +171,11 @@ onBeforeUnmount(() => {
   </aside>
 
   <Teleport to="body">
-    <div v-if="pendingDeleteFriend" class="fs-modal-overlay" @click.self="pendingDeleteFriend = null">
+    <div
+      v-if="pendingDeleteFriend"
+      class="fs-modal-overlay"
+      @click.self="pendingDeleteFriend = null"
+    >
       <div class="fs-modal">
         <p class="fs-modal-msg">
           <strong>{{ pendingDeleteFriend.nickname }}</strong> 님을 친구 목록에서 삭제하시겠습니까?
@@ -328,7 +340,9 @@ onBeforeUnmount(() => {
   color: #c4cad6;
   cursor: pointer;
   opacity: 1;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
   padding: 0;
 }
 

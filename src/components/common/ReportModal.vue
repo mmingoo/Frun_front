@@ -8,45 +8,32 @@ const props = defineProps({
 const emit = defineEmits(['update:show', 'submit'])
 
 const reportReason = ref('')
-const reportEtc = ref('')
 
 function close() {
   emit('update:show', false)
 }
 
 function submit() {
-  if (!reportReason.value) return
-  emit('submit', { reason: reportReason.value, etc: reportEtc.value })
+  if (!reportReason.value.trim()) return
+  emit('submit', { reason: reportReason.value })
   reportReason.value = ''
-  reportEtc.value = ''
 }
 </script>
 
 <template>
   <div v-if="show" class="modal-overlay" @click.self="close">
     <div class="modal">
-      <h3 class="modal-title">신고 사유 선택</h3>
-      <div class="report-options">
-        <label class="report-option">
-          <input v-model="reportReason" type="radio" value="inappropriate" />
-          부적절한 콘텐츠
-        </label>
-        <label class="report-option">
-          <input v-model="reportReason" type="radio" value="etc" />
-          기타
-        </label>
-      </div>
+      <h3 class="modal-title">신고 사유</h3>
       <textarea
-        v-if="reportReason === 'etc'"
-        v-model="reportEtc"
+        v-model="reportReason"
         placeholder="신고 사유를 입력하세요."
         class="report-textarea"
         maxlength="200"
-        rows="3"
+        rows="4"
       />
       <div class="modal-actions">
         <button class="modal-btn modal-cancel" @click="close">취소</button>
-        <button class="modal-btn modal-confirm" :disabled="!reportReason" @click="submit">
+        <button class="modal-btn modal-confirm" :disabled="!reportReason.trim()" @click="submit">
           신고
         </button>
       </div>
@@ -78,20 +65,6 @@ function submit() {
   font-weight: 700;
   color: #1a1a2e;
   margin: 0 0 16px;
-}
-.report-options {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.report-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #2d3748;
-  cursor: pointer;
 }
 .report-textarea {
   width: 100%;

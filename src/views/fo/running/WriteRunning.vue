@@ -123,6 +123,9 @@ async function handleSubmit() {
       photos: photos.value,
     })
     router.push('/feed')
+  } catch (e) {
+    const message = e.response?.data?.message
+    alert(message)
   } finally {
     isLoading.value = false
   }

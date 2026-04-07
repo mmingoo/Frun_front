@@ -55,7 +55,8 @@ async function saveEdit({ bio, imageFile, imagePreview }) {
     if (imageFile) profile.value.profileImage = imagePreview
     profile.value.bio = bio
   } catch (e) {
-    console.error('프로필 수정 실패', e)
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 async function initPage() {
@@ -166,8 +167,8 @@ async function handleAddFriend() {
     await requestFriend(profile.value.id)
     profile.value.friendStatus = 'SENDED'
   } catch (e) {
-    console.log('친구 추가 실패 : ', e)
-    alert('친구 추가되지 않았습니다.')
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 
@@ -178,8 +179,8 @@ async function handleAcceptFriend() {
     profile.value.friendCount++
     sidebarKey.value++
   } catch (e) {
-    console.log('친구 수락 실패 : ', e)
-    alert('친구 수락에 실패했습니다.')
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 
@@ -188,8 +189,8 @@ async function handleRejectFriend() {
     await rejectFriend(profile.value.id)
     profile.value.friendStatus = 'NONE'
   } catch (e) {
-    console.log('친구 거절 실패 : ', e)
-    alert('친구 거절에 실패했습니다.')
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 
@@ -201,8 +202,8 @@ async function confirmDelete() {
     profile.value.friendCount--
     sidebarKey.value++
   } catch (e) {
-    console.log('친구삭제 실패 : ', e)
-    alert('친구가 삭제되지 않았습니다.')
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 </script>

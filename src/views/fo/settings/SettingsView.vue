@@ -73,8 +73,8 @@ async function handleSaveNickname() {
     isDuplicateChecked.value = false
     duplicateMessage.value = ''
     duplicateStatus.value = ''
-  } catch {
-    nicknameSaveMsg.value = '닉네임 변경에 실패했습니다.'
+  } catch (e) {
+    nicknameSaveMsg.value = e.response?.data?.message ?? '닉네임 변경에 실패했습니다.'
   } finally {
     isNicknameLoading.value = false
   }
@@ -92,8 +92,9 @@ async function handleDeactivate() {
     await logoutApi()
     auth.logout()
     router.replace('/')
-  } catch {
-    alert('계정 비활성화에 실패했습니다. 다시 시도해주세요.')
+  } catch (e) {
+    const message = e.response?.data?.message
+    alert(message)
   } finally {
     isDeactivating.value = false
   }

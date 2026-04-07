@@ -51,10 +51,18 @@
 /* ── 2열 그리드 ── */
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: 1fr 500px 440px 1fr;
   gap: 20px;
   padding: 0 0 60px;
   align-items: start;
+}
+
+.content-grid > .post-section {
+  grid-column: 2;
+}
+
+.content-grid > .comment-section {
+  grid-column: 3;
 }
 
 /* ── 일지 섹션 ── */
@@ -63,6 +71,8 @@
   border-radius: 16px;
   border: 1px solid #edf0f7;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 작성자 헤더 */
@@ -182,19 +192,21 @@
   flex-shrink: 0;
 }
 
-.report-link {
+.report-link,
+.btn-report {
   background: none;
   border: none;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  color: #e53e3e;
+  color: #cbd5e0;
   padding: 0;
-  transition: opacity 0.2s;
+  transition: color 0.2s;
 }
 
-.report-link:hover {
-  opacity: 0.7;
+.report-link:hover,
+.btn-report:hover {
+  color: #e53e3e;
 }
 
 /* ── 댓글 섹션 ── */
@@ -323,6 +335,10 @@
 
 .text-btn:hover {
   color: #3b5bdb;
+}
+
+.text-btn-report {
+  color: #cbd5e0;
 }
 
 .text-btn-report:hover {

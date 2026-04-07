@@ -246,12 +246,12 @@ function next(postId, length) {
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  color: #e53e3e;
+  color: #cbd5e0;
   padding: 0;
-  transition: opacity 0.2s;
+  transition: color 0.2s;
 }
 .btn-report:hover {
-  opacity: 0.7;
+  color: #e53e3e;
 }
 
 /* ── 사진 ── */

@@ -11,6 +11,7 @@ import FriendsView from '@/views/fo/friends/FriendsView.vue'
 import NotificationsView from '@/views/fo/notifications/NotificationsView.vue'
 import MyPageView from '@/views/fo/mypage/MyPageView.vue'
 import SettingsView from '@/views/fo/settings/SettingsView.vue'
+import NoticeDetailView from '@/views/fo/notice/NoticeDetailView.vue'
 import api from '@/api/index.js'
 import { useAuthStore } from '@/stores/auth.js'
 
@@ -81,6 +82,11 @@ const router = createRouter({
       path: '/settings',
       name: 'SettingsView',
       component: SettingsView,
+    },
+    {
+      path: '/notices/:noticeId',
+      name: 'NoticeDetailView',
+      component: NoticeDetailView,
     },
   ],
 })

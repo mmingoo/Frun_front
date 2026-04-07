@@ -51,7 +51,8 @@ async function handleAddFriend(user) {
     await requestFriend(user.id)
     user.friendStatus = 'SENDED'
   } catch (e) {
-    console.error('친구 요청 실패', e)
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 
@@ -61,7 +62,8 @@ async function handleAcceptFriend(user) {
     await acceptFriend(user.id)
     user.friendStatus = 'FRIEND'
   } catch (e) {
-    console.error('친구 수락 실패', e)
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 
@@ -70,7 +72,8 @@ async function handleRejectFriend(user) {
     await rejectFriend(user.id)
     user.friendStatus = 'NONE'
   } catch (e) {
-    console.error('친구 거절 실패', e)
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 
@@ -79,7 +82,8 @@ async function handleDeleteFriend(user) {
     await deleteFriend(user.id)
     user.friendStatus = 'NONE'
   } catch (e) {
-    console.error('친구 삭제 실패', e)
+    const message = e.response?.data?.message
+    alert(message)
   }
 }
 </script>
