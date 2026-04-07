@@ -25,3 +25,7 @@ export function getMyProfile() {
 export function logout() {
   return api.post('/api/v1/auth/logout')
 }
+
+export function agreeTerms(agreements) {
+  return api.post('/api/terms/agree', { agreements })
+}

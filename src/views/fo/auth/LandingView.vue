@@ -12,7 +12,7 @@ onMounted(async () => {
   try {
     const res = await getNicknameStatus()
     auth.hasNickname = res.data.data.hasNickname
-    router.replace(auth.hasNickname ? '/feed' : '/signup/nickname')
+    router.replace(auth.hasNickname ? '/feed' : '/signup/terms')
   } catch {
     // 미인증 → 로그인 페이지 유지
   }
@@ -36,7 +36,7 @@ function loginWithNaver() {
           <svg
             width="36"
             height="36"
-            viewBox="0 0 24 24"
+            viewBox="-2 0 24 20"
             fill="none"
             stroke="#3b5bdb"
             stroke-width="2.2"
@@ -48,18 +48,18 @@ function loginWithNaver() {
             <path d="M4 19l3.5-3.5" />
           </svg>
         </div>
-        <h1 class="brand">Frun</h1>
-        <p class="tagline">러닝을 기록하고, 함께 달리세요</p>
+        <h1 class="brand">FRun</h1>
+        <p class="tagline">러닝을 기록하고, 친구들과 함께 달려봐요!</p>
       </div>
 
       <!-- 소개 -->
       <ul class="features">
         <li>
-          <span class="feature-icon">📍</span>
+          <span class="feature-icon">📷</span>
           <span>러닝 일지를 사진과 함께 기록</span>
         </li>
         <li>
-          <span class="feature-icon">👟</span>
+          <span class="feature-icon">🏃‍♂️</span>
           <span>친구들의 러닝 피드 확인</span>
         </li>
         <li>
@@ -73,8 +73,6 @@ function loginWithNaver() {
         <img src="/img/naver.png" alt="네이버 로고" width="80" height="40" />
         네이버로 시작하기
       </button>
-
-      <p class="notice">로그인하면 Frun 서비스 이용약관 및 개인정보처리방침에 동의하게 됩니다.</p>
     </div>
   </div>
 </template>

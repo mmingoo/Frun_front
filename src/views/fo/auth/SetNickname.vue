@@ -2,7 +2,12 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.js'
-import { checkNickname, setNickname } from '@/api/auth.js'
+import { checkNickname, setNickname, agreeTerms } from '@/api/auth.js'
+
+// termsId: 1=서비스 이용약관, 2=개인정보처리방침, 3=마케팅 정보 수신
+const TERMS_SERVICE_ID = 1
+const TERMS_PRIVACY_ID = 2
+const TERMS_MARKETING_ID = 3
 
 const auth = useAuthStore() // const router = useRouter() 아래에 추가
 const router = useRouter()
@@ -77,6 +82,11 @@ async function handleSubmit() {
   if (!canSubmit.value) return
   isLoading.value = true
   try {
+    await agreeTerms([
+      { termsId: TERMS_SERVICE_ID, isAgreed: true },
+      { termsId: TERMS_PRIVACY_ID, isAgreed: true },
+      { termsId: TERMS_MARKETING_ID, isAgreed: auth.marketingAgreed },
+    ])
     await setNickname(nickname.value, profileImage.value)
     auth.hasNickname = true
     router.push('/feed')

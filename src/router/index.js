@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LandingView from '@/views/fo/auth/LandingView.vue'
 import SetNickname from '@/views/fo/auth/SetNickname.vue'
+import TermsView from '@/views/fo/auth/TermsView.vue'
 import InactiveView from '@/views/fo/auth/InactiveView.vue'
 import WriteRunning from '@/views/fo/running/WriteRunning.vue'
 import EditRunning from '@/views/fo/running/EditRunning.vue'
@@ -22,6 +23,11 @@ const router = createRouter({
       path: '/',
       name: 'LandingView',
       component: LandingView,
+    },
+    {
+      path: '/signup/terms',
+      name: 'TermsView',
+      component: TermsView,
     },
     {
       path: '/signup/nickname',
@@ -124,12 +130,12 @@ router.beforeEach(async (to) => {
     }
   }
 
-  // /signup/nickname은 로그인은 됐지만 닉네임 없는 유저만 접근 가능
-  if (to.path === '/signup/nickname') {
+  // /signup/terms, /signup/nickname은 닉네임 없는 유저만 접근 가능
+  if (to.path === '/signup/terms' || to.path === '/signup/nickname') {
     return auth.hasNickname ? '/feed' : true
   }
 
-  if (!auth.hasNickname) return '/signup/nickname'
+  if (!auth.hasNickname) return '/signup/terms'
 })
 
 export default router

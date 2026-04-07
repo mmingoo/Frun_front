@@ -3,6 +3,8 @@ import { defineStore } from 'pinia'
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     hasNickname: null,
+    termsAgreed: false,
+    marketingAgreed: false,
     accessToken: null, // 메모리에만 보관 (새로고침 시 reissue로 복구)
     profileImage: null,
     userId: null,
@@ -28,6 +30,8 @@ export const useAuthStore = defineStore('auth', {
     },
     logout() {
       this.hasNickname = null
+      this.termsAgreed = false
+      this.marketingAgreed = false
       this.accessToken = null
       this.profileImage = null
       this.userId = null

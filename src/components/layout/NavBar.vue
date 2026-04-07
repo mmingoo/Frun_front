@@ -49,7 +49,7 @@ async function handleLogout() {
         <path d="M7.5 15.5 9 11l3 2 2-5" />
         <path d="M4 19l3.5-3.5" />
       </svg>
-      <span class="nav-brand">Frun</span>
+      <span class="nav-brand">FRun</span>
     </button>
     <div class="nav-actions">
       <button
