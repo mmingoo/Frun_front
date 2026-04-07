@@ -149,6 +149,14 @@
   line-height: 1.5;
 }
 
+.noti-content {
+  display: block;
+  max-width: calc(100% - 13px);
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
 .noti-time {
   font-size: 11px;
   color: #94a3b8;
@@ -183,20 +191,19 @@
 
 .btn-reject {
   height: 30px;
-  padding: 0 px;
-  background: #e53e3e;
-  color: #718096;
+  padding: 0 16px;
+  background: #fff;
+  color: #e53e3e;
   border: 1.5px solid #e53e3e;
   border-radius: 8px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-reject:hover {
-  border-color: #e53e3e;
-  color: #e53e3e;
+  background: #fff5f5;
 }
 
 .status-badge {
@@ -226,6 +233,31 @@
   background: #3b5bdb;
   flex-shrink: 0;
   margin-top: 6px;
+}
+
+.sentinel {
+  height: 1px;
+}
+
+.loading-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #edf0f7;
+  border-top-color: #3b5bdb;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 480px) {

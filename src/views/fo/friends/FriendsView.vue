@@ -135,12 +135,16 @@ async function handleDeleteFriend(user) {
               <button class="btn-add btn-disabled" disabled>친구요청 중</button>
             </template>
             <template v-else-if="user.friendStatus === 'PENDING'">
-              <button class="btn-add btn-accept" @click="handleAcceptFriend(user)">수락</button>
-              <button class="btn-delete" @click="handleRejectFriend(user)">거절</button>
+              <div class="btn-group">
+                <button class="btn-add btn-accept" @click="handleAcceptFriend(user)">수락</button>
+                <button class="btn-delete" @click="handleRejectFriend(user)">거절</button>
+              </div>
             </template>
             <template v-else-if="user.friendStatus === 'FRIEND'">
-              <span class="already-friend">친구</span>
-              <button class="btn-delete" @click="handleDeleteFriend(user)">삭제</button>
+              <div class="btn-group">
+                <span class="already-friend">친구</span>
+                <button class="btn-delete" @click="handleDeleteFriend(user)">삭제</button>
+              </div>
             </template>
           </li>
         </ul>

@@ -45,7 +45,8 @@ api.interceptors.response.use(
         // 재발급도 실패 → 로그아웃
         const auth = useAuthStore()
         auth.logout()
-        if (window.location.pathname !== '/') {
+        const path = window.location.pathname
+        if (path !== '/' && path !== '/inactive') {
           window.location.href = '/'
         }
       }

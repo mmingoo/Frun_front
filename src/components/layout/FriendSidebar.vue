@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { getFriendList } from '@/api/friend.js'
+import { getFriendList, deleteFriend } from '@/api/friend.js'
 import { BASE_URL } from '@/api/index.js'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
@@ -28,7 +28,6 @@ async function loadMoreFriends() {
   if (isLoadingFriends.value || !hasMoreFriends.value) return
   isLoadingFriends.value = true
   try {
-    console.log('cursorName:', nextCursorName.value, 'cursorId:', nextCursorId.value)
     const res = await getFriendList(
       nextCursorName.value ?? undefined,
       nextCursorId.value ?? undefined,
@@ -68,6 +67,23 @@ function setupObserver() {
     { root: null, rootMargin: '0px', threshold: 0 },
   )
   friendObserver.observe(friendSentinelRef.value)
+}
+
+const pendingDeleteFriend = ref(null)
+
+function confirmDelete(friend) {
+  pendingDeleteFriend.value = friend
+}
+
+async function executeDelete() {
+  const friend = pendingDeleteFriend.value
+  pendingDeleteFriend.value = null
+  try {
+    await deleteFriend(friend.id)
+    visibleFriends.value = visibleFriends.value.filter((f) => f.id !== friend.id)
+  } catch (e) {
+    console.error('친구 삭제 실패', e)
+  }
 }
 
 onMounted(async () => {
@@ -110,12 +126,17 @@ onBeforeUnmount(() => {
           :key="friend.id"
           class="friend-item"
           @click="$router.push(`/mypage/${friend.id}`)"
-          style="cursor: pointer"
         >
           <div class="friend-avatar">
             <UserAvatar :src="friend.profileImage" :alt="friend.nickname" :size="15" />
           </div>
           <span class="friend-name">{{ friend.nickname }}</span>
+          <button class="friend-delete-btn" @click.stop="confirmDelete(friend)" title="친구 삭제">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </li>
 
         <li ref="friendSentinelRef" class="friend-sentinel">
@@ -140,6 +161,20 @@ onBeforeUnmount(() => {
       </button>
     </div>
   </aside>
+
+  <Teleport to="body">
+    <div v-if="pendingDeleteFriend" class="fs-modal-overlay" @click.self="pendingDeleteFriend = null">
+      <div class="fs-modal">
+        <p class="fs-modal-msg">
+          <strong>{{ pendingDeleteFriend.nickname }}</strong> 님을 친구 목록에서 삭제하시겠습니까?
+        </p>
+        <div class="fs-modal-actions">
+          <button class="fs-modal-btn fs-cancel" @click="pendingDeleteFriend = null">취소</button>
+          <button class="fs-modal-btn fs-confirm" @click="executeDelete">삭제</button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -277,6 +312,91 @@ onBeforeUnmount(() => {
   to {
     transform: rotate(360deg);
   }
+}
+
+.friend-delete-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: #c4cad6;
+  cursor: pointer;
+  opacity: 1;
+  transition: color 0.15s, background 0.15s;
+  padding: 0;
+}
+
+.friend-delete-btn:hover {
+  color: #e53e3e;
+  background: #fff0f0;
+}
+
+.fs-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.fs-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px 22px 18px;
+  width: 280px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16);
+}
+
+.fs-modal-msg {
+  font-size: 14px;
+  color: #2d3748;
+  margin: 0 0 18px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.fs-modal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.fs-modal-btn {
+  flex: 1;
+  height: 38px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fs-cancel {
+  background: #f7f8fc;
+  border: 1.5px solid #e2e8f0;
+  color: #718096;
+}
+
+.fs-cancel:hover {
+  border-color: #a0b0e0;
+  color: #3b5bdb;
+}
+
+.fs-confirm {
+  background: #e53e3e;
+  border: none;
+  color: #fff;
+}
+
+.fs-confirm:hover {
+  background: #c53030;
 }
 
 .friend-add-btn {

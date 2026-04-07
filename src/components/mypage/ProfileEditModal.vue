@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -12,6 +12,12 @@ const emit = defineEmits(['update:modelValue', 'save'])
 const editBio = ref('')
 const editProfileImageFile = ref(null)
 const editProfileImagePreview = ref(null)
+const imageError = ref('')
+
+const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png']
+const MAX_SIZE = 3 * 1024 * 1024 // 3MB
+
+const canSave = computed(() => !imageError.value)
 
 watch(
   () => props.modelValue,
@@ -20,6 +26,7 @@ watch(
       editBio.value = props.bio
       editProfileImageFile.value = null
       editProfileImagePreview.value = props.profileImage
+      imageError.value = ''
     }
   },
 )
@@ -27,6 +34,19 @@ watch(
 function onProfileImageChange(e) {
   const file = e.target.files[0]
   if (!file) return
+
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    imageError.value = 'jpg, jpeg, png 형식의 파일만 업로드할 수 있습니다.'
+    e.target.value = ''
+    return
+  }
+  if (file.size > MAX_SIZE) {
+    imageError.value = '파일 크기는 최대 3MB까지 가능합니다.'
+    e.target.value = ''
+    return
+  }
+
+  imageError.value = ''
   editProfileImageFile.value = file
   editProfileImagePreview.value = URL.createObjectURL(file)
 }
@@ -67,8 +87,10 @@ function close() {
         </div>
         <label class="btn-change-photo">
           사진 변경
-          <input type="file" accept="image/*" style="display: none" @change="onProfileImageChange" />
+          <input type="file" accept=".jpg,.jpeg,.png" style="display: none" @change="onProfileImageChange" />
         </label>
+        <p v-if="imageError" class="image-error">{{ imageError }}</p>
+        <p v-else class="image-hint">jpg, jpeg, png · 최대 3MB</p>
       </div>
 
       <!-- 한 줄 소개 -->
@@ -90,7 +112,7 @@ function close() {
 
       <div class="modal-actions">
         <button class="modal-btn modal-cancel" @click="close">취소</button>
-        <button class="modal-btn modal-confirm" @click="save">저장</button>
+        <button class="modal-btn modal-confirm" :disabled="!canSave" @click="save">저장</button>
       </div>
     </div>
   </div>
@@ -247,7 +269,24 @@ function close() {
   color: #fff;
 }
 
-.modal-confirm:hover {
+.modal-confirm:hover:not(:disabled) {
   background: #2f4ac7;
+}
+
+.modal-confirm:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}
+
+.image-hint {
+  font-size: 11px;
+  color: #a0aec0;
+  margin: 0;
+}
+
+.image-error {
+  font-size: 11px;
+  color: #e53e3e;
+  margin: 0;
 }
 </style>

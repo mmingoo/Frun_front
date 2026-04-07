@@ -1,0 +1,280 @@
+.page-wrap {
+  min-height: 100vh;
+  background: #f7f8fc;
+}
+
+.page-grid {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+
+.main-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 4px;
+}
+
+/* 카드 */
+.settings-card {
+  background: #fff;
+  border: 1px solid #edf0f7;
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: #8e9aaf;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 닉네임 입력 */
+.input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.nickname-input {
+  flex: 1;
+  height: 44px;
+  border: 1.5px solid #dde3ed;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 14px;
+  color: #1a1a2e;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #fafbfc;
+}
+
+.nickname-input::placeholder {
+  color: #b0b9c8;
+}
+
+.nickname-input:focus {
+  border-color: #3b5bdb;
+  background: #fff;
+}
+
+.nickname-input.input-error {
+  border-color: #e53e3e;
+}
+
+.btn-check {
+  height: 44px;
+  padding: 0 16px;
+  background: #3b5bdb;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.btn-check:hover:not(:disabled) {
+  background: #2f4ac7;
+}
+
+.btn-check:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}
+
+.msg {
+  font-size: 12px;
+  margin: 0;
+}
+
+.msg-hint {
+  color: #b0b9c8;
+}
+
+.msg-ok {
+  color: #38a169;
+}
+
+.msg-error {
+  color: #e53e3e;
+}
+
+.msg-save {
+  color: #3b5bdb;
+  font-weight: 600;
+}
+
+.btn-save {
+  align-self: flex-start;
+  height: 42px;
+  padding: 0 28px;
+  background: #3b5bdb;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: #2f4ac7;
+}
+
+.btn-save:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}
+
+/* 위험 구역 카드 */
+.danger-card {
+  border-color: #fed7d7;
+  background: #fff5f5;
+}
+
+.danger-title {
+  color: #c53030;
+}
+
+.btn-deactivate {
+  align-self: flex-start;
+  height: 42px;
+  padding: 0 24px;
+  background: #fff;
+  color: #c53030;
+  border: 1.5px solid #fc8181;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-deactivate:hover:not(:disabled) {
+  background: #fff5f5;
+  border-color: #e53e3e;
+}
+
+.btn-deactivate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 스피너 */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 모달 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px 28px 22px;
+  width: 340px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.modal-desc {
+  font-size: 13px;
+  color: #718096;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.modal-btn {
+  height: 38px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+}
+
+.modal-cancel {
+  background: #edf0f7;
+  color: #4a5568;
+}
+
+.modal-cancel:hover {
+  background: #e2e8f0;
+}
+
+.modal-deactivate {
+  background: #e53e3e;
+  color: #fff;
+}
+
+.modal-deactivate:hover {
+  background: #c53030;
+}
+
+@media (max-width: 600px) {
+  .page-grid {
+    padding: 20px 16px 40px;
+  }
+}

@@ -1,93 +1,98 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from '@/components/layout/NavBar.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import { getNotifications } from '@/api/notification.js'
+import { acceptFriend, rejectFriend } from '@/api/friend.js'
+import { BASE_URL } from '@/api/index.js'
 
 const router = useRouter()
 
-const notifications = ref([
-  {
-    id: 1,
-    type: 'like',
-    fromNickname: '친구닉네임A',
-    profileImage: null,
-    message: '회원님의 러닝일지를 좋아합니다.',
-    targetId: 2,
-    createdAt: '방금 전',
-    read: false,
-    friendStatus: null,
-  },
-  {
-    id: 2,
-    type: 'comment',
-    fromNickname: '친구닉네임B',
-    profileImage: null,
-    message: '회원님의 러닝일지에 댓글을 남겼습니다.',
-    targetId: 2,
-    createdAt: '10분 전',
-    read: false,
-    friendStatus: null,
-  },
-  {
-    id: 3,
-    type: 'friend',
-    fromNickname: '친구닉네임C',
-    profileImage: null,
-    message: '회원님에게 친구 요청을 보냈습니다.',
-    targetId: null,
-    createdAt: '1시간 전',
-    read: false,
-    friendStatus: null, // null | 'accepted' | 'rejected'
-  },
-  {
-    id: 4,
-    type: 'like',
-    fromNickname: '친구닉네임A',
-    profileImage: null,
-    message: '회원님의 러닝일지를 좋아합니다.',
-    targetId: 1,
-    createdAt: '어제',
-    read: true,
-    friendStatus: null,
-  },
-  {
-    id: 5,
-    type: 'friend',
-    fromNickname: '친구닉네임D',
-    profileImage: null,
-    message: '회원님에게 친구 요청을 보냈습니다.',
-    targetId: null,
-    createdAt: '어제',
-    read: true,
-    friendStatus: 'accepted',
-  },
-])
+const notifications = ref([])
+const cursorId = ref(null)
+const hasNext = ref(true)
+const loading = ref(false)
+const sentinel = ref(null)
 
 const unread = computed(() => notifications.value.filter((n) => !n.read).length)
 
-const typeColor = { like: '#e53e3e', comment: '#3b5bdb', friend: '#38a169' }
+function getType(message) {
+  if (message.includes('좋아요')) return 'like'
+  if (message.includes('댓글')) return 'comment'
+  if (message.includes('친구')) return 'friend'
+  return 'like'
+}
+
+
+async function loadMore() {
+  if (loading.value || !hasNext.value) return
+  loading.value = true
+  try {
+    const res = await getNotifications(cursorId.value)
+    const { notificationDtoList, nextCursorId, hasNext: more } = res.data.data
+    notifications.value.push(...notificationDtoList)
+    if (nextCursorId === cursorId.value) {
+      hasNext.value = false
+      return
+    }
+    cursorId.value = nextCursorId
+    hasNext.value = more
+  } catch (e) {
+    console.error('알림 조회 실패', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+let observer = null
+
+onMounted(() => {
+  loadMore()
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) loadMore()
+    },
+    { threshold: 0.1 },
+  )
+  if (sentinel.value) observer.observe(sentinel.value)
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+})
 
 function handleClick(noti) {
-  if (noti.type === 'friend') return
+  const type = getType(noti.message)
+  if (type === 'friend') return
   noti.read = true
-  if (noti.targetId) router.push(`/feed/${noti.targetId}`)
-}
-
-function acceptFriend(noti) {
-  noti.friendStatus = 'accepted'
-  noti.read = true
-  // TODO: API 연동
-}
-
-function rejectFriend(noti) {
-  noti.friendStatus = 'rejected'
-  noti.read = true
-  // TODO: API 연동
+  if (noti.commentId) {
+    router.push(`/feed/${noti.runningLogId}/${noti.authorId}?commentId=${noti.commentId}`)
+  } else {
+    router.push(`/feed/${noti.runningLogId}/${noti.authorId}`)
+  }
 }
 
 function markAllRead() {
   notifications.value.forEach((n) => (n.read = true))
+}
+
+async function handleAccept(noti) {
+  try {
+    await acceptFriend(noti.senderId)
+    noti.friendRequestStatus = 'FRIEND'
+  } catch (e) {
+    console.error('친구 요청 수락 실패', e)
+  }
+}
+
+async function handleReject(noti) {
+  try {
+    await rejectFriend(noti.senderId)
+    noti.friendRequestStatus = 'REJECTED'
+  } catch (e) {
+    console.error('친구 요청 거절 실패', e)
+  }
 }
 </script>
 
@@ -95,7 +100,6 @@ function markAllRead() {
   <div class="page-wrap">
     <NavBar />
 
-    <!-- ── 메인 ── -->
     <div class="main-wrap">
       <div class="page-header">
         <h1 class="page-title">
@@ -105,10 +109,17 @@ function markAllRead() {
         <button v-if="unread > 0" class="mark-all-btn" @click="markAllRead">모두 읽음</button>
       </div>
 
-      <div v-if="notifications.length === 0" class="empty-wrap">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c4cad6" stroke-width="1.5">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      <div v-if="!loading && notifications.length === 0" class="empty-wrap">
+        <svg
+          width="40"
+          height="40"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#c4cad6"
+          stroke-width="1.5"
+        >
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
         <p>알림이 없습니다.</p>
       </div>
@@ -116,41 +127,51 @@ function markAllRead() {
       <ul v-else class="noti-list">
         <li
           v-for="noti in notifications"
-          :key="noti.id"
+          :key="noti.notificationId"
           class="noti-item"
-          :class="{ unread: !noti.read, clickable: noti.type !== 'friend' }"
+          :class="{ unread: !noti.read, clickable: getType(noti.message) !== 'friend' }"
           @click="handleClick(noti)"
         >
-          <!-- 아바타 + 타입 점 -->
           <div class="noti-avatar-wrap">
-            <div class="noti-avatar">
-              <UserAvatar :src="noti.profileImage" :alt="noti.fromNickname" :size="20" />
+            <div
+              class="noti-avatar"
+              style="cursor: pointer"
+              @click.stop="router.push(`/mypage/${noti.senderId}`)"
+            >
+              <UserAvatar
+                :src="noti.userProfileImageUrl ? `${BASE_URL}${noti.userProfileImageUrl}` : null"
+                :alt="noti.message"
+                :size="20"
+              />
             </div>
-            <span class="type-dot" :style="{ background: typeColor[noti.type] }" />
           </div>
 
-          <!-- 내용 -->
           <div class="noti-body">
-            <p class="noti-text">
-              <strong>{{ noti.fromNickname }}</strong> {{ noti.message }}
-            </p>
-            <span class="noti-time">{{ noti.createdAt }}</span>
+            <p class="noti-text">{{ noti.message }}</p>
+            <span v-if="noti.content" class="noti-content" @click.stop="handleClick(noti)">{{
+              noti.content
+            }}</span>
           </div>
 
-          <!-- 친구 요청 수락/거절 (카드 맨 오른쪽) -->
-          <div v-if="noti.type === 'friend'" class="friend-actions">
-            <template v-if="noti.friendStatus === null">
-              <button class="btn-accept" @click.stop="acceptFriend(noti)">수락</button>
-              <button class="btn-reject" @click.stop="rejectFriend(noti)">거절</button>
-            </template>
-            <span v-else-if="noti.friendStatus === 'accepted'" class="status-badge accepted">수락됨</span>
-            <span v-else class="status-badge rejected">거절됨</span>
-          </div>
+          <template v-if="getType(noti.message) === 'friend'">
+            <div v-if="noti.friendRequestStatus === 'PENDING'" class="friend-actions" @click.stop>
+              <button class="btn-accept" @click="handleAccept(noti)">수락</button>
+              <button class="btn-reject" @click="handleReject(noti)">거절</button>
+            </div>
+            <span v-else-if="noti.friendRequestStatus === 'FRIEND'" class="status-badge accepted">수락됨</span>
+            <span v-else-if="noti.friendRequestStatus === 'REJECTED'" class="status-badge rejected">거절됨</span>
+          </template>
 
-          <!-- 읽지 않음 점 -->
-          <span v-if="!noti.read && noti.type !== 'friend'" class="unread-dot" />
+          <span v-if="!noti.read && getType(noti.message) !== 'friend'" class="unread-dot" />
         </li>
       </ul>
+
+      <!-- 무한 스크롤 감지 sentinel -->
+      <div ref="sentinel" class="sentinel" />
+
+      <div v-if="loading" class="loading-wrap">
+        <span class="loading-spinner" />
+      </div>
     </div>
   </div>
 </template>

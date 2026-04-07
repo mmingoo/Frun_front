@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LandingView from '@/views/fo/auth/LandingView.vue'
 import SetNickname from '@/views/fo/auth/SetNickname.vue'
+import InactiveView from '@/views/fo/auth/InactiveView.vue'
 import WriteRunning from '@/views/fo/running/WriteRunning.vue'
 import EditRunning from '@/views/fo/running/EditRunning.vue'
 import FeedView from '@/views/fo/feed/FeedView.vue'
@@ -9,6 +10,7 @@ import StatsView from '@/views/fo/stats/StatsView.vue'
 import FriendsView from '@/views/fo/friends/FriendsView.vue'
 import NotificationsView from '@/views/fo/notifications/NotificationsView.vue'
 import MyPageView from '@/views/fo/mypage/MyPageView.vue'
+import SettingsView from '@/views/fo/settings/SettingsView.vue'
 import api from '@/api/index.js'
 import { useAuthStore } from '@/stores/auth.js'
 
@@ -24,6 +26,11 @@ const router = createRouter({
       path: '/signup/nickname',
       name: 'SetNickname',
       component: SetNickname,
+    },
+    {
+      path: '/inactive',
+      name: 'InactiveView',
+      component: InactiveView,
     },
     {
       path: '/feed',
@@ -70,13 +77,33 @@ const router = createRouter({
       name: 'FriendPageView',
       component: MyPageView,
     },
+    {
+      path: '/settings',
+      name: 'SettingsView',
+      component: SettingsView,
+    },
   ],
 })
 
 // 모든 페이지 이동 전에 실행
 router.beforeEach(async (to) => {
-  // / 는 LandingView에서 자체적으로 토큰 체크 후 리다이렉트 처리
-  if (to.path === '/') return true
+  // /inactive 는 비활성화 유저 전용 페이지 — 가드 없이 통과
+  if (to.path === '/inactive') return true
+
+  // / 는 로그인 상태면 feed로, 아니면 LandingView
+  if (to.path === '/') {
+    const auth = useAuthStore()
+    if (auth.hasNickname === null) {
+      try {
+        const res = await api.get('/api/v1/users/me/nickname-status')
+        auth.hasNickname = res.data.data.hasNickname
+      } catch {
+        return true // 미로그인 → LandingView 표시
+      }
+    }
+    if (auth.hasNickname) return '/feed'
+    return true
+  }
 
   //store 에서 hasNickname 확인
   const auth = useAuthStore()

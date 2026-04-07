@@ -157,7 +157,7 @@ onMounted(async () => {
     memo.value = d.memo ?? ''
 
     // 공개 설정 (API 응답에 isPublic이 있으면 사용, 없으면 기본 true)
-    if (d.isPublic !== undefined) isPublic.value = d.isPublic
+    isPublic.value = d.public !== false
   } catch (e) {
     const status = e.response?.status
     if (status === 403) fetchError.value = '이 일지를 수정할 권한이 없습니다.'

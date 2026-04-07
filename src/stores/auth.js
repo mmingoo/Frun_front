@@ -7,6 +7,7 @@ export const useAuthStore = defineStore('auth', {
     profileImage: null,
     userId: null,
     nickname: null,
+    notificationCnt: 0,
   }),
 
   actions: {
@@ -22,12 +23,16 @@ export const useAuthStore = defineStore('auth', {
     setNickname(nickname) {
       this.nickname = nickname
     },
+    setNotificationCnt(cnt) {
+      this.notificationCnt = cnt ?? 0
+    },
     logout() {
       this.hasNickname = null
       this.accessToken = null
       this.profileImage = null
       this.userId = null
       this.nickname = null
+      this.notificationCnt = 0
     },
   },
 })

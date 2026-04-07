@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { addLike, cancelLike, deleteRunningLog, getRunningLogDetail } from '@/api/feed.js'
 import { BASE_URL } from '@/api/index.js'
@@ -68,24 +68,13 @@ onMounted(async () => {
     isLoading.value = false
   }
 
-  //댓글 로딩
-  try {
-    const res = await getComment(post.value.runningLogId)
-    comments.value = res.data.data.contents.map((c) => ({
-      id: c.commentId,
-      authorId: c.userId,
-      nickname: c.nickname,
-      profileImage: c.profileImageUrl ? `${BASE_URL}${c.profileImageUrl}` : null,
-      content: c.content,
-      createdAt: c.createdAt?.slice(0, 16).replace('T', ' ') ?? '',
-      replyCount: c.replyCount,
-      replies: [],
-      showReplyInput: false,
-      replyInput: '',
-    }))
-  } catch (e) {
-    console.log('댓글 불러오기 실패 : ', e)
+  await loadMoreComments()
+
+  const targetCommentId = route.query.commentId ? Number(route.query.commentId) : null
+  if (targetCommentId) {
+    await scrollToTargetComment(targetCommentId)
   }
+  setupCommentObserver()
 })
 
 // ── duration 포맷 ("HH:mm:ss" → "X시간 Xm Xs") ─────────────
@@ -161,6 +150,57 @@ async function confirmDelete() {
 //댓글
 const comments = ref([])
 const newComment = ref('')
+const hasNextComment = ref(true)
+const commentCursorId = ref(null)
+const isLoadingComments = ref(false)
+const commentSentinelRef = ref(null)
+let commentObserver = null
+
+async function loadMoreComments() {
+  if (isLoadingComments.value || !hasNextComment.value || !post.value) return
+  isLoadingComments.value = true
+  try {
+    const res = await getComment(post.value.runningLogId, commentCursorId.value ?? undefined)
+    const data = res.data.data
+    comments.value.push(
+      ...data.contents.map((c) => ({
+        id: c.commentId,
+        authorId: c.userId,
+        nickname: c.nickname,
+        profileImage: c.profileImageUrl ? `${BASE_URL}${c.profileImageUrl}` : null,
+        content: c.content,
+        createdAt: c.createdAt?.slice(0, 16).replace('T', ' ') ?? '',
+        replyCount: c.replyCount,
+        replies: [],
+        showReplyInput: false,
+        replyInput: '',
+      })),
+    )
+    hasNextComment.value = data.hasNext
+    commentCursorId.value = data.nextCursor ?? null
+    totalCommentCount.value = data.totalCount ?? 0
+  } catch (e) {
+    console.log('댓글 불러오기 실패 : ', e)
+  } finally {
+    isLoadingComments.value = false
+  }
+}
+
+function setupCommentObserver() {
+  if (!commentSentinelRef.value) return
+  commentObserver?.disconnect()
+  commentObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) loadMoreComments()
+    },
+    { threshold: 0 },
+  )
+  commentObserver.observe(commentSentinelRef.value)
+}
+
+onBeforeUnmount(() => {
+  commentObserver?.disconnect()
+})
 
 // 댓글 달기
 async function submitComment() {
@@ -307,7 +347,6 @@ async function submitReply(comment) {
       createdAt: '방금',
     })
 
-    console.log(auth.profileImage)
     comment.replyCount++
     comment.replyInput = ''
     comment.showReplyInput = false
@@ -362,9 +401,65 @@ async function submitEdit() {
   }
 }
 
-const totalCommentCount = computed(() =>
-  comments.value.reduce((sum, c) => sum + 1 + (c.replies?.length || 0), 0),
-)
+const totalCommentCount = ref(0)
+
+// ── 알림에서 특정 댓글로 이동 ─────────────────────────────
+const highlightedCommentId = ref(null)
+
+async function scrollToTargetComment(targetId) {
+  // 1단계: 최상위 댓글 전체 페이지 로드 후 탐색
+  while (!comments.value.find((c) => c.id === targetId) && hasNextComment.value) {
+    await loadMoreComments()
+  }
+
+  if (comments.value.find((c) => c.id === targetId)) {
+    highlightedCommentId.value = targetId
+    await nextTick()
+    const el = document.getElementById(`comment-${targetId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setTimeout(() => { highlightedCommentId.value = null }, 3000)
+    }
+    return
+  }
+
+  // 2단계: 답글에서 탐색 — 각 댓글의 모든 reply 페이지를 순회
+  for (const comment of comments.value) {
+    if (!comment.replyCount) continue
+
+    if (!comment.repliesLoaded) {
+      await loadReplies(comment)
+    } else {
+      comment.showReplies = true
+    }
+
+    if (comment.replies.find((r) => r.id === targetId)) {
+      highlightedCommentId.value = targetId
+      await nextTick()
+      const el = document.getElementById(`reply-${targetId}`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setTimeout(() => { highlightedCommentId.value = null }, 3000)
+      }
+      return
+    }
+
+    while (comment.replyHasNext) {
+      await loadMoreReplies(comment)
+      if (comment.replies.find((r) => r.id === targetId)) {
+        comment.showReplies = true
+        highlightedCommentId.value = targetId
+        await nextTick()
+        const el = document.getElementById(`reply-${targetId}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          setTimeout(() => { highlightedCommentId.value = null }, 3000)
+        }
+        return
+      }
+    }
+  }
+}
 </script>
 
 <template>
@@ -539,8 +634,13 @@ const totalCommentCount = computed(() =>
 
               <div class="comment-list">
                 <div v-for="comment in comments" :key="comment.id" class="comment-block">
+
                   <!-- 댓글 -->
-                  <div class="comment-item">
+                  <div
+                    :id="`comment-${comment.id}`"
+                    class="comment-item"
+                    :class="{ 'comment-highlighted': highlightedCommentId === comment.id }"
+                  >
                     <div
                       class="comment-avatar"
                       style="cursor: pointer"
@@ -624,7 +724,13 @@ const totalCommentCount = computed(() =>
 
                   <!-- 답글 목록 -->
                   <div v-if="comment.showReplies && comment.replies.length > 0" class="reply-list">
-                    <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+                    <div
+                      v-for="reply in comment.replies"
+                      :key="reply.id"
+                      :id="`reply-${reply.id}`"
+                      class="reply-item"
+                      :class="{ 'comment-highlighted': highlightedCommentId === reply.id }"
+                    >
                       <div
                         class="comment-avatar reply-avatar"
                         style="cursor: pointer"
@@ -730,6 +836,9 @@ const totalCommentCount = computed(() =>
                     </div>
                     <button class="reply-submit-btn" @click="submitReply(comment)">등록</button>
                   </div>
+                </div>
+                <div ref="commentSentinelRef" class="comment-sentinel">
+                  <span v-if="isLoadingComments" class="comment-spinner" />
                 </div>
               </div>
 
@@ -961,6 +1070,24 @@ const totalCommentCount = computed(() =>
 
 .img-dot.active {
   background: #fff;
+}
+
+/* 댓글 무한 스크롤 */
+.comment-sentinel {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #3b5bdb;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
 }
 
 /* 라이트박스 */

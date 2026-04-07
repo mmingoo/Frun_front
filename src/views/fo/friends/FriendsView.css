@@ -218,6 +218,13 @@
   align-items: center;
 }
 
+.btn-group {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
 .btn-accept {
   height: 32px;
   padding: 0 12px;

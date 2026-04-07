@@ -13,14 +13,16 @@ const userId = ref({})
 
 onMounted(async () => {
   const res = await getMyProfile()
-  userId.value = res.data.data.userId
+  const d = res.data.data
+  userId.value = d.userId
   if (!auth.profileImage) {
     try {
-      auth.setProfileImage(res.data.data.profileImageUrl ? `${BASE_URL}${res.data.data.profileImageUrl}` : null)
+      auth.setProfileImage(d.profileImageUrl ? `${BASE_URL}${d.profileImageUrl}` : null)
     } catch {
       // 프로필 로딩 실패 시 무시
     }
   }
+  auth.setNotificationCnt(d.notificationCnt)
 })
 
 async function handleLogout() {
@@ -72,7 +74,7 @@ async function handleLogout() {
         친구
       </button>
       <button
-        class="nav-icon-btn"
+        class="nav-icon-btn nav-notif-btn"
         :class="{ active: route.path === '/notifications' }"
         @click="router.push('/notifications')"
       >
@@ -87,6 +89,9 @@ async function handleLogout() {
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
+        <span v-if="auth.notificationCnt > 0" class="notif-badge">
+          {{ auth.notificationCnt > 99 ? '99+' : auth.notificationCnt }}
+        </span>
       </button>
       <button
         class="nav-icon-btn"
@@ -242,6 +247,29 @@ async function handleLogout() {
 
 .nav-btn-my:hover {
   background: #2f4ac7;
+}
+
+.nav-notif-btn {
+  position: relative;
+}
+
+.notif-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #e53e3e;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
 }
 
 .nav-profile-btn {
