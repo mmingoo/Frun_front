@@ -102,6 +102,16 @@
   background: #e8eeff;
 }
 
+.noti-item.report {
+  background: #fff5f5;
+  border-color: #fed7d7;
+  cursor: default;
+}
+
+.noti-item.report .noti-text {
+  color: #c53030;
+}
+
 .noti-avatar-wrap {
   position: relative;
   flex-shrink: 0;
@@ -147,6 +157,7 @@
   color: #2d3748;
   margin: 0;
   line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .noti-content {
@@ -155,6 +166,7 @@
   font-size: 13px;
   color: #64748b;
   line-height: 1.4;
+  white-space: pre-wrap;
 }
 
 .noti-time {

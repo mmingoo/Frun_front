@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth.js'
 
-export const BASE_URL = 'http://localhost:8080'
+export const BASE_URL = 'http://localhost:8081'
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -29,7 +29,7 @@ api.interceptors.response.use(
       try {
         // refreshToken 쿠키 자동 전송 → 백엔드가 새 accessToken을 JSON으로 응답
         const res = await axios.post(
-          'http://localhost:8080/api/v1/auth/reissue',
+          'http://localhost:8081/api/v1/auth/reissue',
           {},
           { withCredentials: true },
         )

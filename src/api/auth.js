@@ -2,7 +2,7 @@ import axios from 'axios'
 import api from './index.js'
 
 export function getNicknameStatus() {
-  return axios.get('http://localhost:8080/api/v1/users/me/nickname-status', {
+  return axios.get('http://localhost:8081/api/v1/users/me/nickname-status', {
     withCredentials: true,
   })
 }

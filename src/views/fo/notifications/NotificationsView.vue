@@ -24,6 +24,11 @@ function getType(message) {
   return 'like'
 }
 
+function isReport(noti) {
+  if (noti.type === 'REPORT_ACCEPTED' || noti.type === 'REPORT_REJECTED') return true
+  return noti.message?.includes('신고')
+}
+
 
 async function loadMore() {
   if (loading.value || !hasNext.value) return
@@ -65,6 +70,7 @@ onBeforeUnmount(() => {
 function handleClick(noti) {
   const type = getType(noti.message)
   if (type === 'friend') return
+  if (isReport(noti)) return
   noti.read = true
   if (noti.commentId) {
     router.push(`/feed/${noti.runningLogId}/${noti.authorId}?commentId=${noti.commentId}`)
@@ -131,7 +137,11 @@ async function handleReject(noti) {
           v-for="noti in notifications"
           :key="noti.notificationId"
           class="noti-item"
-          :class="{ unread: !noti.read, clickable: getType(noti.message) !== 'friend' }"
+          :class="{
+            unread: !noti.read,
+            clickable: getType(noti.message) !== 'friend' && !isReport(noti),
+            report: isReport(noti),
+          }"
           @click="handleClick(noti)"
         >
           <div class="noti-avatar-wrap">

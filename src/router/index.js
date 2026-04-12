@@ -132,7 +132,10 @@ router.beforeEach(async (to) => {
 
   // /signup/terms, /signup/nickname은 닉네임 없는 유저만 접근 가능
   if (to.path === '/signup/terms' || to.path === '/signup/nickname') {
-    return auth.hasNickname ? '/feed' : true
+    if (auth.hasNickname) return '/feed'
+    // 약관 동의 없이 닉네임 설정 페이지에 직접 접근하면 약관 화면으로 이동
+    if (to.path === '/signup/nickname' && !auth.termsAgreed) return '/signup/terms'
+    return true
   }
 
   if (!auth.hasNickname) return '/signup/terms'
