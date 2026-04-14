@@ -29,7 +29,6 @@ function isReport(noti) {
   return noti.message?.includes('신고')
 }
 
-
 async function loadMore() {
   if (loading.value || !hasNext.value) return
   loading.value = true
@@ -170,8 +169,15 @@ async function handleReject(noti) {
               <button class="btn-accept" @click="handleAccept(noti)">수락</button>
               <button class="btn-reject" @click="handleReject(noti)">거절</button>
             </div>
-            <span v-else-if="noti.friendRequestStatus === 'FRIEND'" class="status-badge accepted">수락됨</span>
-            <span v-else-if="noti.friendRequestStatus === 'REJECTED'" class="status-badge rejected">거절됨</span>
+            <span
+              v-else-if="noti.friendRequestStatus === 'FRIEND'"
+              class="status-badge accepted"
+              color="blue"
+              >수락됨</span
+            >
+            <span v-else-if="noti.friendRequestStatus === 'REJECTED'" class="status-badge rejected"
+              >거절됨</span
+            >
           </template>
 
           <span v-if="!noti.read && getType(noti.message) !== 'friend'" class="unread-dot" />

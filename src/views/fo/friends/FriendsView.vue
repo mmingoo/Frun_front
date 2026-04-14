@@ -14,23 +14,31 @@ const hasSearched = ref(false)
 const isLoading = ref(false)
 
 let debounceTimer = null
+let abortController = null
 
 watch(searchInput, (val) => {
   clearTimeout(debounceTimer)
   if (!val.trim()) {
+    abortController?.abort()
     searchResults.value = []
     hasSearched.value = false
     return
   }
+  if (val.trim().length < 2) return
   debounceTimer = setTimeout(() => doSearch(), 300)
 })
 
 async function doSearch() {
-  if (!searchInput.value.trim()) return
+  const keyword = searchInput.value.trim()
+  if (!keyword || keyword.length < 2) return
+
+  abortController?.abort()
+  abortController = new AbortController()
+
   isLoading.value = true
   hasSearched.value = true
   try {
-    const res = await searchFriend(searchInput.value.trim(), null, null, 20)
+    const res = await searchFriend(keyword, null, null, 20, abortController.signal)
     const data = res.data.data
     searchResults.value = (data.users ?? []).map((u) => ({
       id: u.userId,
@@ -39,6 +47,7 @@ async function doSearch() {
       friendStatus: u.friendStatus ?? 'NONE',
     }))
   } catch (e) {
+    if (e.name === 'CanceledError' || e.code === 'ERR_CANCELED') return
     console.error('친구 검색 실패', e)
     searchResults.value = []
   } finally {

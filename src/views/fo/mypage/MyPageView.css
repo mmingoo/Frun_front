@@ -154,6 +154,7 @@
   background: #fff;
   border: 1.5px solid #e53e3e;
   color: #e53e3e;
+  margin-left: -10px;
 }
 
 .btn-friend-delete:hover {

@@ -86,6 +86,7 @@ async function loadNotices() {
         ...list.map((n) => ({
           id: n.noticeId,
           title: n.title,
+          noticeType: n.noticeType,
           createdDate: n.createdDate,
         })),
       )
@@ -96,6 +97,16 @@ async function loadNotices() {
     console.error('공지사항 로딩 실패', e)
   }
 }
+const NOTICE_TYPE_LABEL = {
+  GENERAL: '일반',
+  COMPETITION: '대회',
+  EVENT: '이벤트',
+  UPDATE: '업데이트',
+}
+function noticeTypeLabel(type) {
+  return NOTICE_TYPE_LABEL[type] ?? type
+}
+
 const noticeTotalPages = computed(() => Math.ceil(notices.value.length / NOTICE_PAGE_SIZE))
 const pagedNotices = computed(() => {
   const start = (noticePage.value - 1) * NOTICE_PAGE_SIZE
@@ -304,7 +315,10 @@ function formatDate(dateStr) {
               class="notice-item"
               @click="router.push(`/notices/${notice.id}`)"
             >
-              <span class="notice-title-text">{{ notice.title }}</span>
+              <span class="notice-item-top">
+                <span class="notice-type-badge">{{ noticeTypeLabel(notice.noticeType) }}</span>
+                <span class="notice-title-text">{{ notice.title }}</span>
+              </span>
               <span class="notice-date">{{ formatDate(notice.createdDate) }}</span>
             </li>
           </ul>

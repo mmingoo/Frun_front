@@ -181,7 +181,10 @@ async function handleDeactivate() {
   >
     <div class="modal">
       <h3 class="modal-title">계정을 비활성화하시겠습니까?</h3>
-      <p class="modal-desc">비활성화 후 로그인하면 언제든지 복구할 수 있습니다.</p>
+      <p class="modal-desc">
+        비활성화 후 로그인하면 언제든지 복구할 수 있습니다. 비활성화 후 3개월 후에 계정이 영구적으로
+        삭제됩니다.
+      </p>
       <div class="modal-actions">
         <button class="modal-btn modal-cancel" @click="showDeactivateConfirm = false">취소</button>
         <button class="modal-btn modal-deactivate" @click="handleDeactivate">비활성화</button>

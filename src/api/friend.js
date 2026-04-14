@@ -6,9 +6,10 @@ export function getFriendList(cursorname, cursorId, size = 10) {
   })
 }
 
-export function searchFriend(keyword, cursorname, cursorId, size) {
+export function searchFriend(keyword, cursorname, cursorId, size, signal) {
   return api.get('/api/v1/friend/search', {
     params: { keyword, cursorname, cursorId, size },
+    signal,
   })
 }
 

@@ -229,8 +229,8 @@
 }
 
 .status-badge.accepted {
-  background: #e6f7ee;
-  color: #38a169;
+  background: #eef2ff;
+  color: #3b5bdb;
 }
 
 .status-badge.rejected {

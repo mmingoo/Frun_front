@@ -29,6 +29,14 @@ function formatDate(dateStr) {
   if (!dateStr) return ''
   return dateStr.slice(0, 16).replace('T', ' ')
 }
+
+const NOTICE_TYPE_LABEL = {
+  SERVICE: '서비스',
+  COMPETITION: '대회',
+}
+function noticeTypeLabel(type) {
+  return NOTICE_TYPE_LABEL[type] ?? type
+}
 </script>
 
 <template>
@@ -78,7 +86,9 @@ function formatDate(dateStr) {
       <!-- 본문 -->
       <article v-else-if="notice" class="notice-card">
         <header class="notice-header">
-          <span class="notice-badge">공지</span>
+          <div class="notice-badge-row">
+            <span class="notice-type-badge">{{ noticeTypeLabel(notice.noticeType) }}</span>
+          </div>
           <div class="notice-title-row">
             <h1 class="notice-title">{{ notice.title }}</h1>
             <p class="notice-date">{{ formatDate(notice.createdAt) }}</p>
