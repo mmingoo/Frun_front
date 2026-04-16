@@ -81,6 +81,7 @@ async function executeDelete() {
   try {
     await deleteFriend(friend.id)
     visibleFriends.value = visibleFriends.value.filter((f) => f.id !== friend.id)
+    alert('친구를 삭제하였습니다.')
   } catch (e) {
     const message = e.response?.data?.message
     alert(message)

@@ -14,7 +14,8 @@ onMounted(async () => {
     auth.hasNickname = res.data.data.hasNickname
     router.replace(auth.hasNickname ? '/feed' : '/signup/terms')
   } catch {
-    // 미인증 → 로그인 페이지 유지
+    // 미인증 또는 비활성화 계정 → 로그인 페이지 유지
+    sessionStorage.removeItem('_inactiveAlertShown')
   }
 })
 

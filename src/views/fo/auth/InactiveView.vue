@@ -60,6 +60,7 @@ async function handleActivate() {
     )
     auth.setAccessToken(reissueRes.data.data.accessToken)
     auth.hasNickname = true
+    alert('계정을 활성화하였습니다.')
     router.replace('/feed')
   } catch {
     alert('활성화에 실패했습니다. 다시 시도해주세요.')
@@ -69,6 +70,7 @@ async function handleActivate() {
 }
 
 async function handleCancel() {
+  sessionStorage.setItem('_inactiveAlertShown', '1')
   auth.logout()
   router.replace('/')
 }
@@ -87,7 +89,8 @@ async function handleCancel() {
       <!-- 신고 누적 비활성화 -->
       <template v-if="userStatus === 'REPORT_INACTIVE'">
         <p class="desc admin-msg">
-          신고 누적 3회로 인해 계정이 비활성화 되었습니다.<br />자세한 문의는 관리자에게 해주세요.
+          신고 누적 3회로 인해 계정이 비활성화 되었습니다.<br />자세한 문의는 관리자에게
+          해주세요.<br />계정은 3개월 뒤에 삭제됩니다
         </p>
         <div class="actions">
           <button class="btn btn-cancel" @click="handleCancel">확인</button>
@@ -98,6 +101,7 @@ async function handleCancel() {
       <template v-else-if="userStatus === 'DIRECT_INACTIVE'">
         <p class="desc admin-msg">
           관리자에 의해 계정이 비활성화 되었습니다.<br />자세한 문의는 관리자에게 해주세요.
+          <br />계정은 3개월 뒤에 삭제됩니다
         </p>
         <div class="actions">
           <button class="btn btn-cancel" @click="handleCancel">확인</button>

@@ -64,8 +64,11 @@ onMounted(async () => {
     }
   } catch (e) {
     const status = e.response?.status
-    if (status === 404) errorMsg.value = '존재하지 않는 러닝 일지입니다.'
-    else errorMsg.value = '불러오기에 실패했습니다.'
+    if (status === 404) {
+      router.replace({ name: 'NotFoundView', params: { pathMatch: route.path.split('/').slice(1) } })
+      return
+    }
+    errorMsg.value = '불러오기에 실패했습니다.'
   } finally {
     isLoading.value = false
   }
@@ -93,14 +96,13 @@ const currentImageIndex = ref(0)
 
 function prevImage() {
   if (!post.value) return
-  const len = post.value.logImages.length
-  currentImageIndex.value = (currentImageIndex.value - 1 + len) % len
+  if (currentImageIndex.value > 0) currentImageIndex.value--
 }
 
 function nextImage() {
   if (!post.value) return
   const len = post.value.logImages.length
-  currentImageIndex.value = (currentImageIndex.value + 1) % len
+  if (currentImageIndex.value < len - 1) currentImageIndex.value++
 }
 
 // ── 이미지 라이트박스 ─────────────────────────────────────
@@ -138,15 +140,14 @@ function handleEdit() {
 const showDeleteConfirm = ref(false)
 
 async function confirmDelete() {
-  // TODO: 삭제 API 연동
   showDeleteConfirm.value = false
   try {
     await deleteRunningLog(post.value.runningLogId)
+    alert('러닝일지를 삭제하였습니다.')
+    router.push(`/mypage/${auth.userId}`)
   } catch (e) {
     const message = e.response?.data?.message
-    alert(message)
-  } finally {
-    router.push(`/mypage/${auth.userId}`)
+    alert(message || '삭제에 실패했습니다. 다시 시도해주세요.')
   }
 }
 
@@ -261,7 +262,7 @@ async function confirmDeleteComment() {
       const idx = comments.value.findIndex((c) => c.id === target.commentId)
       if (idx !== -1) {
         const deleted = comments.value[idx]
-        const deletedTotal = 1 + (deleted.replies?.length ?? 0)
+        const deletedTotal = 1 + (deleted.replyCount ?? deleted.replies?.length ?? 0)
         comments.value.splice(idx, 1)
         totalCommentCount.value = Math.max(0, totalCommentCount.value - deletedTotal)
         if (post.value) post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - deletedTotal)
@@ -700,8 +701,12 @@ async function scrollToTargetComment(targetId) {
                           >{{ comment.nickname }}</span
                         >
                         <span class="comment-date">{{ comment.createdAt }}</span>
-                        <template v-if="comment.authorId === auth.userId">
+                        <div
+                          v-if="comment.authorId === auth.userId || isOwner"
+                          class="comment-meta-actions"
+                        >
                           <button
+                            v-if="comment.authorId === auth.userId"
                             class="text-btn text-btn-edit"
                             @click="startEdit(comment.id, comment.content)"
                           >
@@ -713,7 +718,7 @@ async function scrollToTargetComment(targetId) {
                           >
                             삭제
                           </button>
-                        </template>
+                        </div>
                       </div>
                       <!-- 수정 모드 -->
                       <div v-if="editingId === comment.id" class="edit-input-wrap">
@@ -791,8 +796,12 @@ async function scrollToTargetComment(targetId) {
                             >{{ reply.nickname }}</span
                           >
                           <span class="comment-date">{{ reply.createdAt }}</span>
-                          <template v-if="reply.authorId === auth.userId">
+                          <div
+                            v-if="reply.authorId === auth.userId || isOwner"
+                            class="comment-meta-actions"
+                          >
                             <button
+                              v-if="reply.authorId === auth.userId"
                               class="text-btn text-btn-edit"
                               @click="startEdit(reply.id, reply.content)"
                             >
@@ -804,7 +813,7 @@ async function scrollToTargetComment(targetId) {
                             >
                               삭제
                             </button>
-                          </template>
+                          </div>
                         </div>
                         <!-- 수정 모드 -->
                         <div v-if="editingId === reply.id" class="edit-input-wrap">

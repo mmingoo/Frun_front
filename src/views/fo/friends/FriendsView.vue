@@ -59,6 +59,7 @@ async function handleAddFriend(user) {
   try {
     await requestFriend(user.id)
     user.friendStatus = 'SENDED'
+    alert('친구 요청을 보냈습니다.')
   } catch (e) {
     const message = e.response?.data?.message
     alert(message)
@@ -70,6 +71,7 @@ async function handleAcceptFriend(user) {
   try {
     await acceptFriend(user.id)
     user.friendStatus = 'FRIEND'
+    alert('친구 요청을 수락하였습니다.')
   } catch (e) {
     const message = e.response?.data?.message
     alert(message)
@@ -80,6 +82,7 @@ async function handleRejectFriend(user) {
   try {
     await rejectFriend(user.id)
     user.friendStatus = 'NONE'
+    alert('친구 요청을 거절하였습니다.')
   } catch (e) {
     const message = e.response?.data?.message
     alert(message)
@@ -87,9 +90,11 @@ async function handleRejectFriend(user) {
 }
 
 async function handleDeleteFriend(user) {
+  if (!confirm(`'${user.nickname}'님을 친구 목록에서 삭제하시겠습니까?`)) return
   try {
     await deleteFriend(user.id)
     user.friendStatus = 'NONE'
+    alert('친구를 삭제하였습니다.')
   } catch (e) {
     const message = e.response?.data?.message
     alert(message)

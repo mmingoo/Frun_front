@@ -290,12 +290,10 @@
   margin-bottom: 3px;
 }
 
-.comment-meta .text-btn-edit {
+.comment-meta-actions {
   margin-left: auto;
-}
-
-.comment-meta .text-btn-delete {
-  margin-left: 0;
+  display: flex;
+  gap: 4px;
 }
 
 .comment-author {

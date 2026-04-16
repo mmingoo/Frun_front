@@ -54,6 +54,7 @@ async function saveEdit({ bio, imageFile, imagePreview }) {
     // API 성공 후 화면 반영
     if (imageFile) profile.value.profileImage = imagePreview
     profile.value.bio = bio
+    alert('프로필을 변경하였습니다.')
   } catch (e) {
     const message = e.response?.data?.message
     alert(message)
@@ -111,7 +112,13 @@ async function loadProfile() {
       avgPace: d.avgPace,
     }
   } catch (e) {
-    console.error('프로필 로딩 실패', e)
+    const message = e.response?.data?.message
+    if (message) {
+      alert(message)
+      router.replace('/feed')
+    } else {
+      router.replace({ name: 'NotFoundView', params: { pathMatch: route.path.split('/').slice(1) } })
+    }
   } finally {
     isLoadingProfile.value = false
   }

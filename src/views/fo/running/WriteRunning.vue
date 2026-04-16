@@ -122,6 +122,7 @@ async function handleSubmit() {
       isPublic: isPublic.value,
       photos: photos.value,
     })
+    alert('러닝일지를 작성하였습니다.')
     router.push('/feed')
   } catch (e) {
     const message = e.response?.data?.message

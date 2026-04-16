@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import NotFoundView from '@/views/fo/error/NotFoundView.vue'
 import LandingView from '@/views/fo/auth/LandingView.vue'
 import SetNickname from '@/views/fo/auth/SetNickname.vue'
 import TermsView from '@/views/fo/auth/TermsView.vue'
@@ -94,13 +95,19 @@ const router = createRouter({
       name: 'NoticeDetailView',
       component: NoticeDetailView,
     },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFoundView',
+      component: NotFoundView,
+    },
   ],
 })
 
 // 모든 페이지 이동 전에 실행
 router.beforeEach(async (to) => {
-  // /inactive 는 비활성화 유저 전용 페이지 — 가드 없이 통과
+  // /inactive, NotFoundView 는 가드 없이 통과
   if (to.path === '/inactive') return true
+  if (to.name === 'NotFoundView') return true
 
   // / 는 로그인 상태면 feed로, 아니면 LandingView
   if (to.path === '/') {

@@ -86,7 +86,8 @@
 }
 
 .btn-cancel:hover:not(:disabled) {
-  background: #e2e8f0;
+  background: #3b5bdb;
+  color: #fff;
 }
 
 .btn-activate {

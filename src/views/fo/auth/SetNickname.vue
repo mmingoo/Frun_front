@@ -101,6 +101,7 @@ async function handleSubmit() {
 <template>
   <div class="container">
     <h1 class="title">닉네임을 설정해주세요</h1>
+    <p class="subtitle" style="margin-bottom: 4px">jpg, jpeg, png 형식, 최대 3MB</p>
     <p class="subtitle">5~20자, 한글/영문/숫자 사용 가능</p>
 
     <!-- 프로필 사진 -->

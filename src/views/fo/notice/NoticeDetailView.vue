@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import NavBar from '@/components/layout/NavBar.vue'
 import { getNoticeDetail } from '@/api/notice.js'
@@ -36,6 +36,28 @@ const NOTICE_TYPE_LABEL = {
 }
 function noticeTypeLabel(type) {
   return NOTICE_TYPE_LABEL[type] ?? type
+}
+
+const IMAGE_URL_RE = /(https?:\/\/\S+\.(?:png|jpe?g|gif|webp|svg)(?:\?\S*)?)/gi
+
+const renderedContent = computed(() => {
+  if (!notice.value?.content) return ''
+  return notice.value.content.replace(
+    IMAGE_URL_RE,
+    (url) => `<img src="${url}" alt="공지 이미지" class="notice-img" />`,
+  )
+})
+
+const lightboxSrc = ref(null)
+
+function onBodyClick(e) {
+  if (e.target.classList.contains('notice-img')) {
+    lightboxSrc.value = e.target.src
+  }
+}
+
+function closeLightbox() {
+  lightboxSrc.value = null
 }
 </script>
 
@@ -96,10 +118,18 @@ function noticeTypeLabel(type) {
           <hr class="divider" />
         </header>
 
-        <div class="notice-body" v-html="notice.content" />
+        <div class="notice-body" v-html="renderedContent" @click="onBodyClick" />
       </article>
     </div>
   </div>
+
+  <!-- 라이트박스 -->
+  <Teleport to="body">
+    <div v-if="lightboxSrc" class="lightbox-overlay" @click="closeLightbox">
+      <img :src="lightboxSrc" alt="확대 이미지" class="lightbox-img" @click.stop />
+      <button class="lightbox-close" @click="closeLightbox">✕</button>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped src="./NoticeDetailView.css" />

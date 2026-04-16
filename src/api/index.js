@@ -23,6 +23,17 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
+    if (error.response?.status === 401 && error.response?.data?.code === 'ACCOUNT_INACTIVE') {
+      if (!sessionStorage.getItem('_inactiveAlertShown')) {
+        sessionStorage.setItem('_inactiveAlertShown', '1')
+        alert('계정이 비활성화 되었습니다.')
+        const auth = useAuthStore()
+        auth.logout()
+        window.location.href = '/'
+      }
+      return Promise.reject(error)
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 

@@ -68,6 +68,7 @@ async function handleSaveNickname() {
   try {
     await updateNickname(nickname.value)
     auth.setNickname(nickname.value)
+    alert('닉네임이 변경되었습니다.')
     nicknameSaveMsg.value = '닉네임이 변경되었습니다.'
     nickname.value = ''
     isDuplicateChecked.value = false
@@ -89,6 +90,7 @@ async function handleDeactivate() {
   isDeactivating.value = true
   try {
     await deactivateAccount()
+    alert('계정이 비활성화되었습니다.')
     await logoutApi()
     auth.logout()
     router.replace('/')

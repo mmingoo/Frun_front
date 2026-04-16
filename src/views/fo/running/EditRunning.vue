@@ -185,6 +185,7 @@ async function handleSubmit() {
       keepImageUrls: existingPhotos.value.map((p) => p.url),
       newPhotos: newPhotos.value,
     })
+    alert('러닝일지를 수정하였습니다.')
     router.back()
   } catch (e) {
     const status = e.response?.status
