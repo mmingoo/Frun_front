@@ -63,12 +63,19 @@ onMounted(async () => {
       liked: d.liked,
     }
   } catch (e) {
-    const status = e.response?.status
+    /*const status = e.response?.status
     if (status === 404) {
-      router.replace({ name: 'NotFoundView', params: { pathMatch: route.path.split('/').slice(1) } })
+      router.replace({
+        name: 'NotFoundView',
+        params: { pathMatch: route.path.split('/').slice(1) },
+      })
       return
     }
     errorMsg.value = '불러오기에 실패했습니다.'
+  */
+    const message = e.response?.data?.message
+    alert(message)
+    router.push(`/feed`)
   } finally {
     isLoading.value = false
   }
@@ -234,7 +241,10 @@ async function submitComment() {
     // 입력창 초기화
     newComment.value = ''
     totalCommentCount.value++
+
     if (post.value) post.value.commentCount = (post.value.commentCount ?? 0) + 1
+
+    alert('댓글을 작성하였습니다.')
   } catch (e) {
     const message = e.response?.data?.message
     alert(message)
@@ -265,8 +275,10 @@ async function confirmDeleteComment() {
         const deletedTotal = 1 + (deleted.replyCount ?? deleted.replies?.length ?? 0)
         comments.value.splice(idx, 1)
         totalCommentCount.value = Math.max(0, totalCommentCount.value - deletedTotal)
-        if (post.value) post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - deletedTotal)
+        if (post.value)
+          post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - deletedTotal)
       }
+      alert('댓글을 삭제하였습니다.')
     } else {
       const comment = comments.value.find((c) => c.id === target.commentId)
       if (comment) {
@@ -278,6 +290,7 @@ async function confirmDeleteComment() {
           if (post.value) post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - 1)
         }
       }
+      alert('댓글을 하지 못하였습니다.')
     }
   } catch (e) {
     const message = e.response?.data?.message
@@ -370,6 +383,7 @@ async function submitReply(comment) {
     comment.showReplies = true
     totalCommentCount.value++
     if (post.value) post.value.commentCount = (post.value.commentCount ?? 0) + 1
+    alert('답글을 작성하였습니다.')
   } catch (e) {
     const message = e.response?.data?.message
     alert(message)
@@ -550,7 +564,9 @@ async function scrollToTargetComment(targetId) {
                     삭제
                   </button>
                 </div>
-                <button v-else class="btn-report" @click.stop="openReport(post.runningLogId)">신고</button>
+                <button v-else class="btn-report" @click.stop="openReport(post.runningLogId)">
+                  신고
+                </button>
               </div>
 
               <!-- 이미지 슬라이더 -->

@@ -5,3 +5,13 @@ export function getNotifications(cursorId, size = 15) {
     params: { cursorId: cursorId ?? undefined, size },
   })
 }
+
+export function deleteSelectedNotifications(selectedNotificationIds) {
+  return api.delete('/api/v1/notification/selected-notification', {
+    data: { selectedNotificationIds },
+  })
+}
+
+export function deleteAllNotifications() {
+  return api.delete('/api/v1/notification')
+}

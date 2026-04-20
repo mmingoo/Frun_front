@@ -17,6 +17,8 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+let _inactiveAlertHandled = false
+
 // 응답 인터셉터 - 401 시 refreshToken 쿠키로 accessToken 재발급
 api.interceptors.response.use(
   (response) => response,
@@ -24,14 +26,15 @@ api.interceptors.response.use(
     const originalRequest = error.config
 
     if (error.response?.status === 401 && error.response?.data?.code === 'ACCOUNT_INACTIVE') {
-      if (!sessionStorage.getItem('_inactiveAlertShown')) {
-        sessionStorage.setItem('_inactiveAlertShown', '1')
-        alert('계정이 비활성화 되었습니다.')
+      if (!_inactiveAlertHandled) {
+        _inactiveAlertHandled = true
         const auth = useAuthStore()
         auth.logout()
+        sessionStorage.setItem('_accountInactive', '1')
+        alert('계정이 비활성화 되었습니다.')
         window.location.href = '/'
       }
-      return Promise.reject(error)
+      return new Promise(() => {})
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {

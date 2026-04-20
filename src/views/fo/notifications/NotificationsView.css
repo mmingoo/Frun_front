@@ -53,6 +53,109 @@
   opacity: 0.7;
 }
 
+/* ── 알림 섹션 (툴바 + 리스트 묶음) ── */
+.noti-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── 삭제 툴바 ── */
+.delete-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 7px;
+}
+
+.select-all-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+  user-select: none;
+}
+
+.select-all-checkbox {
+  display: inline-flex;
+  position: relative;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.select-all-checkbox input[type='checkbox'] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.select-all-checkbox input:checked + .noti-checkbox-ui {
+  background: #3b5bdb;
+  border-color: #3b5bdb;
+}
+
+.select-all-checkbox input:checked + .noti-checkbox-ui::after {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 7px;
+  border: 1.5px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+  margin: 1px 0 0 4px;
+}
+
+.delete-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-delete-selected {
+  height: 26px;
+  padding: 0 10px;
+  background: #fff;
+  color: #e53e3e;
+  border: 1.5px solid #e53e3e;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-delete-selected:hover:not(:disabled) {
+  background: #fff5f5;
+}
+
+.btn-delete-selected:disabled {
+  color: #c4cad6;
+  border-color: #c4cad6;
+  cursor: not-allowed;
+}
+
+.btn-delete-all {
+  height: 26px;
+  padding: 0 10px;
+  background: #e53e3e;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-delete-all:hover {
+  background: #c53030;
+}
+
 /* ── 빈 상태 ── */
 .empty-wrap {
   display: flex;
@@ -75,6 +178,7 @@
 }
 
 .noti-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -100,6 +204,59 @@
 
 .noti-item.unread.clickable:hover {
   background: #e8eeff;
+}
+
+/* ── 체크박스 ── */
+.noti-checkbox-wrap {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  z-index: 1;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.noti-checkbox-wrap input[type='checkbox'] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.noti-checkbox-ui {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #c4cad6;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  opacity: 0.3;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.noti-checkbox-wrap input:checked + .noti-checkbox-ui {
+  background: #3b5bdb;
+  border-color: #3b5bdb;
+  opacity: 1;
+}
+
+.noti-checkbox-wrap input:checked + .noti-checkbox-ui::after {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 7px;
+  border: 1.5px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+  margin: 1px 0 0 4px;
+}
+
+.noti-item.selected {
+  background: #eef2ff;
+  border-color: #c5d0fa;
 }
 
 .noti-item.report {

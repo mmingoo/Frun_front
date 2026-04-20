@@ -1,106 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from '@/components/layout/NavBar.vue'
-import { useAuthStore } from '@/stores/auth'
-import { checkNickname } from '@/api/auth.js'
-import { updateNickname, deactivateAccount } from '@/api/user.js'
-import { logout as logoutApi } from '@/api/auth.js'
 
 const router = useRouter()
-const auth = useAuthStore()
-
-// ── 닉네임 변경 ──────────────────────────────────────────
-const nickname = ref('')
-const isDuplicateChecked = ref(false)
-const duplicateMessage = ref('')
-const duplicateStatus = ref('') // 'ok' | 'error' | ''
-const isNicknameLoading = ref(false)
-const nicknameSaveMsg = ref('')
-
-const nicknamePattern = /^[가-힣a-zA-Z0-9]{5,20}$/
-
-const nicknameError = computed(() => {
-  if (!nickname.value) return ''
-  if (nickname.value.includes(' ')) return '공백은 사용할 수 없습니다.'
-  if (!nicknamePattern.test(nickname.value)) return '5~20자, 한글/영문/숫자만 사용 가능합니다.'
-  return ''
-})
-
-const canSaveNickname = computed(() => {
-  return (
-    !nicknameError.value &&
-    nickname.value.length >= 5 &&
-    isDuplicateChecked.value &&
-    duplicateStatus.value === 'ok'
-  )
-})
-
-function onNicknameInput() {
-  isDuplicateChecked.value = false
-  duplicateMessage.value = ''
-  duplicateStatus.value = ''
-  nicknameSaveMsg.value = ''
-}
-
-async function checkDuplicate() {
-  if (!nickname.value || nicknameError.value) return
-  isNicknameLoading.value = true
-  try {
-    const res = await checkNickname(nickname.value)
-    const exists = res.data.data.exists
-    if (exists) {
-      duplicateStatus.value = 'error'
-      duplicateMessage.value = res.data.message
-    } else {
-      duplicateStatus.value = 'ok'
-      duplicateMessage.value = res.data.message
-      isDuplicateChecked.value = true
-    }
-  } finally {
-    isNicknameLoading.value = false
-  }
-}
-
-async function handleSaveNickname() {
-  if (!canSaveNickname.value) return
-  isNicknameLoading.value = true
-  try {
-    await updateNickname(nickname.value)
-    auth.setNickname(nickname.value)
-    alert('닉네임이 변경되었습니다.')
-    nicknameSaveMsg.value = '닉네임이 변경되었습니다.'
-    nickname.value = ''
-    isDuplicateChecked.value = false
-    duplicateMessage.value = ''
-    duplicateStatus.value = ''
-  } catch (e) {
-    nicknameSaveMsg.value = e.response?.data?.message ?? '닉네임 변경에 실패했습니다.'
-  } finally {
-    isNicknameLoading.value = false
-  }
-}
-
-// ── 계정 비활성화 ─────────────────────────────────────────
-const showDeactivateConfirm = ref(false)
-const isDeactivating = ref(false)
-
-async function handleDeactivate() {
-  showDeactivateConfirm.value = false
-  isDeactivating.value = true
-  try {
-    await deactivateAccount()
-    alert('계정이 비활성화되었습니다.')
-    await logoutApi()
-    auth.logout()
-    router.replace('/')
-  } catch (e) {
-    const message = e.response?.data?.message
-    alert(message)
-  } finally {
-    isDeactivating.value = false
-  }
-}
 </script>
 
 <template>
@@ -110,86 +12,60 @@ async function handleDeactivate() {
       <div class="main-wrap">
         <h2 class="page-title">설정</h2>
 
-        <!-- 닉네임 변경 섹션 -->
-        <section class="settings-card">
-          <h3 class="card-title">닉네임 변경</h3>
-          <p class="card-desc">5~20자, 한글/영문/숫자 사용 가능</p>
+        <section class="menu-card">
+          <button class="menu-item" @click="router.push('/settings/nickname')">
+            <div class="menu-item-left">
+              <span class="menu-icon nickname-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </span>
+              <span class="menu-label">닉네임 변경</span>
+            </div>
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
 
-          <div class="input-row">
-            <input
-              v-model="nickname"
-              type="text"
-              placeholder="새 닉네임 입력"
-              maxlength="20"
-              class="nickname-input"
-              :class="{ 'input-error': nicknameError }"
-              @input="onNicknameInput"
-            />
-            <button
-              class="btn-check"
-              :disabled="!nickname || !!nicknameError || isNicknameLoading"
-              @click="checkDuplicate"
-            >
-              중복 확인
-            </button>
-          </div>
+          <div class="menu-divider" />
 
-          <p v-if="nicknameError" class="msg msg-error">{{ nicknameError }}</p>
-          <p
-            v-else-if="duplicateMessage"
-            class="msg"
-            :class="duplicateStatus === 'ok' ? 'msg-ok' : 'msg-error'"
-          >
-            {{ duplicateMessage }}
-          </p>
-          <p v-else-if="nickname" class="msg msg-hint">{{ nickname.length }}/20</p>
+          <button class="menu-item" @click="router.push('/settings/terms')">
+            <div class="menu-item-left">
+              <span class="menu-icon terms-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
+              </span>
+              <span class="menu-label">약관 동의 수정</span>
+            </div>
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
 
-          <p v-if="nicknameSaveMsg" class="msg msg-save">{{ nicknameSaveMsg }}</p>
+          <div class="menu-divider" />
 
-          <button
-            class="btn-save"
-            :disabled="!canSaveNickname || isNicknameLoading"
-            @click="handleSaveNickname"
-          >
-            <span v-if="isNicknameLoading" class="spinner" />
-            <span v-else>저장</span>
+          <button class="menu-item danger-item" @click="router.push('/settings/deactivate')">
+            <div class="menu-item-left">
+              <span class="menu-icon danger-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </span>
+              <span class="menu-label">계정 비활성화</span>
+            </div>
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
           </button>
         </section>
-
-        <!-- 계정 비활성화 섹션 -->
-        <section class="settings-card danger-card">
-          <h3 class="card-title danger-title">계정 비활성화</h3>
-          <p class="card-desc">
-            계정을 비활성화하면 프로필과 게시물이 숨겨집니다. 계정은 3개월 후에 영구 삭제됩니다.
-            3개월 이내에 언제든지 다시 로그인해 복구할 수 있습니다.
-          </p>
-          <button
-            class="btn-deactivate"
-            :disabled="isDeactivating"
-            @click="showDeactivateConfirm = true"
-          >
-            계정 비활성화
-          </button>
-        </section>
-      </div>
-    </div>
-  </div>
-
-  <!-- 계정 비활성화 확인 모달 -->
-  <div
-    v-if="showDeactivateConfirm"
-    class="modal-overlay"
-    @click.self="showDeactivateConfirm = false"
-  >
-    <div class="modal">
-      <h3 class="modal-title">계정을 비활성화하시겠습니까?</h3>
-      <p class="modal-desc">
-        비활성화 후 로그인하면 언제든지 복구할 수 있습니다. 비활성화 후 3개월 후에 계정이 영구적으로
-        삭제됩니다.
-      </p>
-      <div class="modal-actions">
-        <button class="modal-btn modal-cancel" @click="showDeactivateConfirm = false">취소</button>
-        <button class="modal-btn modal-deactivate" @click="handleDeactivate">비활성화</button>
       </div>
     </div>
   </div>

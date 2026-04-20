@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
-import { activateAccount, getInactiveInfo } from '@/api/user.js'
+import { getInactiveTempToken, activateAccount, getInactiveInfo } from '@/api/user.js'
 import { BASE_URL } from '@/api/index.js'
 
 const router = useRouter()
@@ -12,6 +12,7 @@ const auth = useAuthStore()
 
 const isLoading = ref(false)
 const infoLoading = ref(true)
+const tokenError = ref(false)
 const deactivatedAt = ref('')
 const deletionScheduledAt = ref('')
 const tempToken = ref('')
@@ -24,20 +25,28 @@ function formatDate(isoString) {
 }
 
 onMounted(async () => {
-  const tokenFromQuery = route.query.token
-  if (!tokenFromQuery) {
-    // 토큰 없이 직접 접근한 경우
+  const code = route.query.code
+  if (!code) {
+    // code 없이 직접 접근한 경우
     router.replace('/')
     return
   }
 
-  tempToken.value = tokenFromQuery
+  // code(UUID)로 임시 토큰 발급 — 일회성이므로 진입 즉시 호출
+  try {
+    const tokenRes = await getInactiveTempToken(code)
+    tempToken.value = tokenRes.data.data
+  } catch {
+    tokenError.value = true
+    infoLoading.value = false
+    return
+  }
 
   // 비활성화 정보 조회 — 실패해도 페이지는 유지
   try {
     const infoRes = await getInactiveInfo(tempToken.value)
-    deactivatedAt.value = formatDate(infoRes.data.data.deactivatedAt)
-    deletionScheduledAt.value = formatDate(infoRes.data.data.deletionScheduledAt)
+    deactivatedAt.value = formatDate(infoRes.data.data.inactiveDate)
+    deletionScheduledAt.value = formatDate(infoRes.data.data.deletionDate)
     userStatus.value = infoRes.data.data.userStatus ?? ''
   } catch {
     // 정보 조회 실패 시 날짜 없이 페이지 유지
@@ -80,6 +89,15 @@ async function handleCancel() {
   <div class="inactive-wrap">
     <div v-if="infoLoading" class="dialog">
       <div class="spinner-center" />
+    </div>
+
+    <div v-else-if="tokenError" class="dialog">
+      <div class="icon">⚠️</div>
+      <h2 class="title">링크가 만료되었습니다.</h2>
+      <p class="desc">링크는 1회용이며 5분간 유효합니다.<br />다시 로그인을 시도해주세요.</p>
+      <div class="actions">
+        <button class="btn btn-cancel" @click="handleCancel">확인</button>
+      </div>
     </div>
 
     <div v-else class="dialog">

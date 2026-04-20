@@ -29,3 +29,15 @@ export function logout() {
 export function agreeTerms(agreements) {
   return api.post('/api/terms/agree', { agreements })
 }
+
+export function updateTermsAgreement(agreements) {
+  return api.patch('/api/terms/agree', { agreements })
+}
+
+export function getTermsList() {
+  return api.get('/api/terms')
+}
+
+export function getMyTerms() {
+  return api.get('/api/terms/my')
+}

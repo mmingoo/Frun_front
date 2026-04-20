@@ -29,6 +29,13 @@ export function deactivateAccount() {
   return api.delete('/api/v1/users/deactivate')
 }
 
+// code(UUID)로 임시 토큰 발급 — 인터셉터 우회 (인증 전 단계)
+export function getInactiveTempToken(code) {
+  return axios.post(`${BASE_URL}/api/v1/users/inactive/token`, null, {
+    params: { code },
+  })
+}
+
 // 임시 토큰을 직접 헤더에 담아 전송 (인터셉터 우회)
 export function activateAccount(tempToken) {
   return axios.patch(

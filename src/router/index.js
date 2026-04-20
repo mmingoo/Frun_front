@@ -13,6 +13,9 @@ import FriendsView from '@/views/fo/friends/FriendsView.vue'
 import NotificationsView from '@/views/fo/notifications/NotificationsView.vue'
 import MyPageView from '@/views/fo/mypage/MyPageView.vue'
 import SettingsView from '@/views/fo/settings/SettingsView.vue'
+import SettingsNicknameView from '@/views/fo/settings/SettingsNicknameView.vue'
+import SettingsDeactivateView from '@/views/fo/settings/SettingsDeactivateView.vue'
+import SettingsTermsView from '@/views/fo/settings/SettingsTermsView.vue'
 import NoticeDetailView from '@/views/fo/notice/NoticeDetailView.vue'
 import api from '@/api/index.js'
 import { useAuthStore } from '@/stores/auth.js'
@@ -91,6 +94,21 @@ const router = createRouter({
       component: SettingsView,
     },
     {
+      path: '/settings/nickname',
+      name: 'SettingsNicknameView',
+      component: SettingsNicknameView,
+    },
+    {
+      path: '/settings/deactivate',
+      name: 'SettingsDeactivateView',
+      component: SettingsDeactivateView,
+    },
+    {
+      path: '/settings/terms',
+      name: 'SettingsTermsView',
+      component: SettingsTermsView,
+    },
+    {
       path: '/notices/:noticeId',
       name: 'NoticeDetailView',
       component: NoticeDetailView,
@@ -108,6 +126,12 @@ router.beforeEach(async (to) => {
   // /inactive, NotFoundView 는 가드 없이 통과
   if (to.path === '/inactive') return true
   if (to.name === 'NotFoundView') return true
+
+  // 비활성화 계정으로 강제 로그아웃된 경우 → API 호출 없이 랜딩 페이지 표시
+  if (sessionStorage.getItem('_accountInactive')) {
+    sessionStorage.removeItem('_accountInactive')
+    return to.path === '/' ? true : '/'
+  }
 
   // / 는 로그인 상태면 feed로, 아니면 LandingView
   if (to.path === '/') {

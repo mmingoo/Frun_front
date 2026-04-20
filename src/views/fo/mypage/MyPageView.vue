@@ -112,12 +112,16 @@ async function loadProfile() {
       avgPace: d.avgPace,
     }
   } catch (e) {
+    if (e.response?.data?.code === 'ACCOUNT_INACTIVE') return
     const message = e.response?.data?.message
     if (message) {
       alert(message)
       router.replace('/feed')
     } else {
-      router.replace({ name: 'NotFoundView', params: { pathMatch: route.path.split('/').slice(1) } })
+      router.replace({
+        name: 'NotFoundView',
+        params: { pathMatch: route.path.split('/').slice(1) },
+      })
     }
   } finally {
     isLoadingProfile.value = false
@@ -250,11 +254,18 @@ async function confirmDelete() {
                     <button class="btn-friend btn-friend-disabled" disabled>친구요청 중</button>
                   </template>
                   <template v-else-if="profile.friendStatus === 'PENDING'">
-                    <button class="btn-friend btn-friend-accept" @click="handleAcceptFriend">수락</button>
-                    <button class="btn-friend btn-friend-delete" @click="handleRejectFriend">거절</button>
+                    <button class="btn-friend btn-friend-accept" @click="handleAcceptFriend">
+                      수락
+                    </button>
+                    <button class="btn-friend btn-friend-delete" @click="handleRejectFriend">
+                      거절
+                    </button>
                   </template>
                   <template v-else-if="profile.friendStatus === 'FRIEND'">
-                    <button class="btn-friend btn-friend-delete" @click.stop="showDeleteConfirm = true">
+                    <button
+                      class="btn-friend btn-friend-delete"
+                      @click.stop="showDeleteConfirm = true"
+                    >
                       친구 삭제
                     </button>
                   </template>

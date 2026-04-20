@@ -15,6 +15,34 @@
   gap: 16px;
 }
 
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.btn-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid #dde3ed;
+  border-radius: 10px;
+  background: #fff;
+  color: #4a5568;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-back:hover {
+  background: #eef2ff;
+  border-color: #3b5bdb;
+  color: #3b5bdb;
+}
+
 .page-title {
   font-size: 20px;
   font-weight: 700;
@@ -271,6 +299,83 @@
 
 .modal-deactivate:hover {
   background: #c53030;
+}
+
+/* 메뉴 카드 */
+.menu-card {
+  background: #fff;
+  border: 1px solid #edf0f7;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 18px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.menu-item:hover {
+  background: #f7f8fc;
+}
+
+.menu-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nickname-icon {
+  background: #eef2ff;
+  color: #3b5bdb;
+}
+
+.terms-icon {
+  background: #e6fffa;
+  color: #2b9e87;
+}
+
+.danger-icon {
+  background: #fff5f5;
+  color: #c53030;
+}
+
+.menu-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a2e;
+}
+
+.danger-item .menu-label {
+  color: #c53030;
+}
+
+.chevron {
+  color: #b0b9c8;
+  flex-shrink: 0;
+}
+
+.menu-divider {
+  height: 1px;
+  background: #edf0f7;
+  margin: 0 20px;
 }
 
 @media (max-width: 600px) {
