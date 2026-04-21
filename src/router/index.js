@@ -17,6 +17,7 @@ import SettingsNicknameView from '@/views/fo/settings/SettingsNicknameView.vue'
 import SettingsDeactivateView from '@/views/fo/settings/SettingsDeactivateView.vue'
 import SettingsTermsView from '@/views/fo/settings/SettingsTermsView.vue'
 import NoticeDetailView from '@/views/fo/notice/NoticeDetailView.vue'
+import NoticeListView from '@/views/fo/notice/NoticeListView.vue'
 import api from '@/api/index.js'
 import { useAuthStore } from '@/stores/auth.js'
 
@@ -107,6 +108,11 @@ const router = createRouter({
       path: '/settings/terms',
       name: 'SettingsTermsView',
       component: SettingsTermsView,
+    },
+    {
+      path: '/notices',
+      name: 'NoticeListView',
+      component: NoticeListView,
     },
     {
       path: '/notices/:noticeId',

@@ -77,21 +77,21 @@ const noticePage = ref(1)
 
 async function loadNotices() {
   try {
-    let cursorId = null
-    let hasNext = true
-    while (hasNext) {
-      const res = await getNotices(cursorId ?? undefined)
-      const { notices: list, hasNext: next, nextCursorId } = res.data.data
+    let page = 0
+    let hasMore = true
+    while (hasMore) {
+      const res = await getNotices(page)
+      const { notices: list, hasNext: next } = res.data.data
       notices.value.push(
         ...list.map((n) => ({
           id: n.noticeId,
           title: n.title,
           noticeType: n.noticeType,
-          createdDate: n.createdDate,
+          createdDate: n.createdAt,
         })),
       )
-      hasNext = next
-      cursorId = nextCursorId ?? null
+      hasMore = next
+      page++
     }
   } catch (e) {
     console.error('공지사항 로딩 실패', e)

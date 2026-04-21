@@ -45,8 +45,8 @@ onMounted(async () => {
   // 비활성화 정보 조회 — 실패해도 페이지는 유지
   try {
     const infoRes = await getInactiveInfo(tempToken.value)
-    deactivatedAt.value = formatDate(infoRes.data.data.inactiveDate)
-    deletionScheduledAt.value = formatDate(infoRes.data.data.deletionDate)
+    deactivatedAt.value = formatDate(infoRes.data.data.deactivatedAt)
+    deletionScheduledAt.value = formatDate(infoRes.data.data.deletionScheduledAt)
     userStatus.value = infoRes.data.data.userStatus ?? ''
   } catch {
     // 정보 조회 실패 시 날짜 없이 페이지 유지

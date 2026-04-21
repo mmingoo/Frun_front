@@ -229,7 +229,7 @@ async function confirmDelete() {
       <div class="main-wrap">
         <!-- ── 프로필 헤더 (인스타그램 스타일) ── -->
         <div class="profile-box">
-          <div v-if="isLoadingProfile" class="profile-loading">불러오는 중…</div>
+          <div v-if="isLoadingProfile" class="profile-loading"><span class="profile-spinner" /></div>
           <div v-else-if="profile" class="profile-header">
             <!-- 아바타 -->
             <div class="avatar-col">

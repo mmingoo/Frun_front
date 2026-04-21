@@ -864,7 +864,8 @@ async function scrollToTargetComment(targetId) {
                       :disabled="comment.replyLoadingMore"
                       @click="loadMoreReplies(comment)"
                     >
-                      {{ comment.replyLoadingMore ? '불러오는 중…' : '답글 더보기' }}
+                      <span v-if="comment.replyLoadingMore" class="reply-loading-spinner" />
+                      <span v-else>답글 더보기</span>
                     </button>
                   </div>
 

@@ -22,6 +22,16 @@
   }
 }
 
+.profile-spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #3b5bdb;
+  border-radius: 50%;
+  animation: posts-spin 0.7s linear infinite;
+}
+
 .page-wrap {
   min-height: 100vh;
   background: #f7f8fc;

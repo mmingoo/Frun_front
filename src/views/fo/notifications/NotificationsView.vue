@@ -214,7 +214,7 @@ async function deleteAll() {
               report: isReport(noti),
               selected: selectedIds.includes(noti.notificationId),
             }"
-            @click="toggleSelect(noti.notificationId)"
+            @click="handleClick(noti)"
           >
             <label class="noti-checkbox-wrap" @click.stop>
               <input
@@ -243,7 +243,6 @@ async function deleteAll() {
               <span
                 v-if="noti.content"
                 class="noti-content"
-                @click.stop="isReport(noti) ? toggleSelect(noti.notificationId) : handleClick(noti)"
               >{{ noti.content }}</span>
             </div>
 

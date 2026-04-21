@@ -320,6 +320,23 @@
   gap: 8px;
 }
 
+.reply-loading-spinner {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #94a3b8;
+  border-radius: 50%;
+  animation: reply-spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes reply-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .text-btn {
   background: none;
   border: none;
