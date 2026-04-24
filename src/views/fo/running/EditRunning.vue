@@ -4,10 +4,13 @@ import { useRouter, useRoute } from 'vue-router'
 import { updateRunning } from '@/api/running.js'
 import { getRunningLogDetail } from '@/api/feed.js'
 import { BASE_URL } from '@/api/index.js'
+import { getMyInfo } from '@/api/user.js'
+import { useAuthStore } from '@/stores/auth.js'
 import NavBar from '@/components/layout/NavBar.vue'
 
 const router = useRouter()
 const route = useRoute()
+const auth = useAuthStore()
 const isLoading = ref(false)
 const isFetching = ref(true)
 const fetchError = ref('')
@@ -88,16 +91,50 @@ function removeNewPhoto(index) {
 const memo = ref('')
 const isPublic = ref(true)
 
+// 입력 필터링
+function onDistanceInput(e) {
+  let val = e.target.value.replace(/[^0-9.]/g, '')
+  const dotIndex = val.indexOf('.')
+  if (dotIndex !== -1) {
+    val = val.slice(0, dotIndex + 1) + val.slice(dotIndex + 1).replace(/\./g, '')
+    if (val.length > dotIndex + 3) val = val.slice(0, dotIndex + 3)
+  }
+  e.target.value = val
+  distance.value = val
+}
+
+function onDurationMinInput(e) {
+  const val = e.target.value.replace(/[^0-9]/g, '')
+  e.target.value = val
+  durationMin.value = val
+}
+
+function onDurationSecInput(e) {
+  const val = e.target.value.replace(/[^0-9]/g, '')
+  e.target.value = val
+  durationSec.value = val
+}
+
 // 유효성
 const distanceError = computed(() => {
   if (!distance.value) return ''
+  if (!/^\d+(\.\d{0,2})?$/.test(distance.value))
+    return '숫자와 점(.)만 입력 가능하며, 소수점 이하 2자리까지만 입력할 수 있습니다.'
   const v = parseFloat(distance.value)
   if (isNaN(v) || v <= 0) return '올바른 거리를 입력해주세요.'
   if (v > 100) return '거리는 최대 100km까지 입력 가능합니다.'
   return ''
 })
 
+const MIN_DATE = '2026-02-01'
+
 const dateTimeError = computed(() => {
+  if (runDate.value < MIN_DATE) {
+    return `러닝 날짜는 ${MIN_DATE} 이후여야 합니다.`
+  }
+  if (runDate.value > defaultDate) {
+    return '러닝 날짜는 오늘 날짜를 초과할 수 없습니다.'
+  }
   if (runDate.value === defaultDate && runTime.value > defaultTime) {
     return '현재 시각보다 이후 시간은 입력할 수 없습니다.'
   }
@@ -127,9 +164,21 @@ const canSubmit = computed(() => {
 // 기존 데이터 불러오기
 onMounted(async () => {
   const { runningLogId, authorId } = route.params
+
+  if (!auth.userId) {
+    const res = await getMyInfo()
+    auth.setUserId(res.data.data.userId)
+  }
+
   try {
     const res = await getRunningLogDetail(runningLogId, authorId)
     const d = res.data.data
+
+    if (d.userId !== auth.userId) {
+      alert('러닝일지를 수정할 권한이 없습니다.')
+      router.replace('/feed')
+      return
+    }
 
     // 날짜 / 시간
     runDate.value = d.runDate ?? defaultDate
@@ -160,9 +209,19 @@ onMounted(async () => {
     isPublic.value = d.public !== false
   } catch (e) {
     const status = e.response?.status
-    if (status === 403) fetchError.value = '이 일지를 수정할 권한이 없습니다.'
-    else if (status === 404) fetchError.value = '존재하지 않는 러닝 일지입니다.'
-    else fetchError.value = '데이터를 불러오는 데 실패했습니다.'
+    const message = e.response?.data?.message
+    if (status === 404) {
+      router.replace({
+        name: 'NotFoundView',
+        params: { pathMatch: route.path.split('/').slice(1) },
+      })
+      return
+    } else if (status === 403) {
+      alert(message || '러닝일지를 수정할 권한이 없습니다.')
+      router.replace('/feed')
+    } else {
+      fetchError.value = message || '데이터를 불러오는 데 실패했습니다.'
+    }
   } finally {
     isFetching.value = false
   }
@@ -246,7 +305,7 @@ function handleCancel() {
                   <line x1="8" y1="2" x2="8" y2="6" />
                   <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
-                <input v-model="runDate" type="date" :max="defaultDate" class="base-input" />
+                <input v-model="runDate" type="date" :min="MIN_DATE" :max="defaultDate" class="base-input" />
               </div>
               <div class="input-wrap">
                 <svg
@@ -289,13 +348,12 @@ function handleCancel() {
                     <path d="M3 12h18M3 6h18M3 18h18" />
                   </svg>
                   <input
-                    v-model="distance"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
+                    :value="distance"
+                    type="text"
+                    inputmode="decimal"
                     placeholder="예: 5.20"
                     class="base-input"
+                    @input="onDistanceInput"
                   />
                 </div>
                 <p v-if="distanceError" class="msg msg-error">{{ distanceError }}</p>
@@ -310,23 +368,23 @@ function handleCancel() {
                 <div class="duration-row">
                   <div class="input-wrap" :class="{ 'input-error': durationError }">
                     <input
-                      v-model="durationMin"
-                      type="number"
-                      min="0"
-                      max="600"
+                      :value="durationMin"
+                      type="text"
+                      inputmode="numeric"
                       placeholder="분"
                       class="base-input text-center"
+                      @input="onDurationMinInput"
                     />
                   </div>
                   <span class="duration-sep">:</span>
                   <div class="input-wrap" :class="{ 'input-error': durationError }">
                     <input
-                      v-model="durationSec"
-                      type="number"
-                      min="0"
-                      max="59"
+                      :value="durationSec"
+                      type="text"
+                      inputmode="numeric"
                       placeholder="초"
                       class="base-input text-center"
+                      @input="onDurationSecInput"
                     />
                   </div>
                 </div>

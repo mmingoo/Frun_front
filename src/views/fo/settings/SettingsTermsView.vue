@@ -39,8 +39,8 @@ async function handleSave() {
       agreed: t.required ? true : agreed.value[t.termId],
     }))
     await updateTermsAgreement(agreements)
-    saveMsg.value = '약관 동의가 저장되었습니다.'
-    saveMsgType.value = 'ok'
+    alert('약관 동의가 저장되었습니다.')
+    router.back()
   } catch (e) {
     saveMsg.value = e.response?.data?.message ?? '저장에 실패했습니다.'
     saveMsgType.value = 'error'
@@ -74,7 +74,7 @@ function formatContent(content) {
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
-          <h2 class="page-title">약관 동의 수정</h2>
+          <h2 class="page-title">약관 동의 변경</h2>
         </div>
 
         <p v-if="loadError" class="msg msg-error">{{ loadError }}</p>
@@ -110,12 +110,7 @@ function formatContent(content) {
                   </svg>
                 </button>
                 <label class="toggle-switch">
-                  <input
-                    v-if="term.required"
-                    type="checkbox"
-                    checked
-                    disabled
-                  />
+                  <input v-if="term.required" type="checkbox" checked disabled />
                   <input
                     v-else
                     v-model="agreed[term.termId]"

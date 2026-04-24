@@ -139,6 +139,12 @@ router.beforeEach(async (to) => {
     return to.path === '/' ? true : '/'
   }
 
+  // refreshToken 만료로 강제 로그아웃된 경우 → API 호출 없이 랜딩 페이지 표시
+  if (sessionStorage.getItem('_refreshExpired')) {
+    sessionStorage.removeItem('_refreshExpired')
+    return to.path === '/' ? true : '/'
+  }
+
   // / 는 로그인 상태면 feed로, 아니면 LandingView
   if (to.path === '/') {
     const auth = useAuthStore()

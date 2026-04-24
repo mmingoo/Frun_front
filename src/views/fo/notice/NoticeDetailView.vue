@@ -80,7 +80,7 @@ function closeLightbox() {
         >
           <polyline points="15 18 9 12 15 6" />
         </svg>
-        메인화면으로 가기
+        뒤로 가기
       </button>
 
       <!-- 로딩 -->

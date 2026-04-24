@@ -26,8 +26,13 @@ onMounted(async () => {
 })
 
 async function handleLogout() {
-  await logoutApi()
+  try {
+    await logoutApi()
+  } catch {
+    // 백엔드 실패해도 로컬 정리는 진행
+  }
   auth.logout()
+  alert('로그아웃 하였습니다.')
   router.replace('/')
 }
 </script>
@@ -71,7 +76,7 @@ async function handleLogout() {
         :class="{ active: route.path === '/friends' }"
         @click="router.push('/friends')"
       >
-        친구
+        검색
       </button>
       <button
         class="nav-icon-btn nav-notif-btn"

@@ -12,11 +12,12 @@ const searchInput = ref('')
 const searchResults = ref([])
 const hasSearched = ref(false)
 const isLoading = ref(false)
+const isComposing = ref(false)
 
 let debounceTimer = null
 let abortController = null
 
-watch(searchInput, (val) => {
+function scheduleSearch(val) {
   clearTimeout(debounceTimer)
   if (!val.trim()) {
     abortController?.abort()
@@ -24,13 +25,26 @@ watch(searchInput, (val) => {
     hasSearched.value = false
     return
   }
-  if (val.trim().length < 2) return
-  debounceTimer = setTimeout(() => doSearch(), 300)
+  debounceTimer = setTimeout(() => doSearch(val), 300)
+}
+
+watch(searchInput, (val) => {
+  if (isComposing.value) return
+  scheduleSearch(val)
 })
 
-async function doSearch() {
-  const keyword = searchInput.value.trim()
-  if (!keyword || keyword.length < 2) return
+function onCompositionStart() {
+  isComposing.value = true
+}
+
+function onCompositionEnd(e) {
+  isComposing.value = false
+  scheduleSearch(e.target.value)
+}
+
+async function doSearch(keyword) {
+  keyword = (keyword ?? searchInput.value).trim()
+  if (!keyword) return
 
   abortController?.abort()
   abortController = new AbortController()
@@ -65,7 +79,6 @@ async function handleAddFriend(user) {
     alert(message)
   }
 }
-
 
 async function handleAcceptFriend(user) {
   try {
@@ -129,6 +142,8 @@ async function handleDeleteFriend(user) {
             class="search-input"
             placeholder="닉네임으로 친구 검색"
             @keydown.enter="doSearch"
+            @compositionstart="onCompositionStart"
+            @compositionend="onCompositionEnd"
           />
         </div>
         <button class="search-btn" @click="doSearch">검색</button>
@@ -141,10 +156,19 @@ async function handleDeleteFriend(user) {
         <div v-else-if="searchResults.length === 0" class="empty-text">검색 결과가 없습니다.</div>
         <ul v-else class="friend-list">
           <li v-for="user in searchResults" :key="user.id" class="friend-item">
-            <div class="friend-avatar" style="cursor:pointer" @click="router.push(`/mypage/${user.id}`)">
+            <div
+              class="friend-avatar"
+              style="cursor: pointer"
+              @click="router.push(`/mypage/${user.id}`)"
+            >
               <UserAvatar :src="user.profileImage" :alt="user.nickname" :size="20" />
             </div>
-            <span class="friend-name" style="cursor:pointer" @click="router.push(`/mypage/${user.id}`)">{{ user.nickname }}</span>
+            <span
+              class="friend-name"
+              style="cursor: pointer"
+              @click="router.push(`/mypage/${user.id}`)"
+              >{{ user.nickname }}</span
+            >
 
             <template v-if="user.friendStatus === 'NONE'">
               <button class="btn-add" @click="handleAddFriend(user)">친구 추가</button>

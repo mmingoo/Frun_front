@@ -63,7 +63,7 @@ onMounted(async () => {
       liked: d.liked,
     }
   } catch (e) {
-    /*const status = e.response?.status
+    const status = e.response?.status
     if (status === 404) {
       router.replace({
         name: 'NotFoundView',
@@ -71,8 +71,6 @@ onMounted(async () => {
       })
       return
     }
-    errorMsg.value = '불러오기에 실패했습니다.'
-  */
     const message = e.response?.data?.message
     alert(message)
     router.push(`/feed`)
@@ -182,6 +180,7 @@ async function loadMoreComments() {
         content: c.content,
         createdAt: c.createdAt?.slice(0, 16).replace('T', ' ') ?? '',
         replyCount: c.replyCount,
+        isDeleted: c.isDeleted ?? c.deleted ?? (c.userId === null),
         replies: [],
         showReplyInput: false,
         replyInput: '',
@@ -219,6 +218,12 @@ async function submitComment() {
 
   // 댓글 200자 제한
   if (!text || text.length > 200) return
+
+  // 수정창 및 열린 답글 입력창 닫기
+  cancelEdit()
+  comments.value.forEach((c) => {
+    c.showReplyInput = false
+  })
 
   try {
     // 댓글 저장
@@ -272,11 +277,22 @@ async function confirmDeleteComment() {
       const idx = comments.value.findIndex((c) => c.id === target.commentId)
       if (idx !== -1) {
         const deleted = comments.value[idx]
-        const deletedTotal = 1 + (deleted.replyCount ?? deleted.replies?.length ?? 0)
-        comments.value.splice(idx, 1)
-        totalCommentCount.value = Math.max(0, totalCommentCount.value - deletedTotal)
-        if (post.value)
-          post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - deletedTotal)
+        const hasReplies = (deleted.replyCount ?? 0) > 0
+        if (hasReplies) {
+          // 답글이 있으면 소프트 삭제 → 플레이스홀더로 전환 (객체 교체로 반응성 보장)
+          comments.value.splice(idx, 1, {
+            ...deleted,
+            isDeleted: true,
+            content: '삭제된 댓글입니다.',
+            authorId: null,
+            nickname: null,
+            profileImage: null,
+          })
+        } else {
+          comments.value.splice(idx, 1)
+        }
+        totalCommentCount.value = Math.max(0, totalCommentCount.value - 1)
+        if (post.value) post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - 1)
       }
       alert('댓글을 삭제하였습니다.')
     } else {
@@ -290,7 +306,7 @@ async function confirmDeleteComment() {
           if (post.value) post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - 1)
         }
       }
-      alert('댓글을 하지 못하였습니다.')
+      alert('답글을 삭제하였습니다.')
     }
   } catch (e) {
     const message = e.response?.data?.message
@@ -301,6 +317,13 @@ async function confirmDeleteComment() {
 }
 
 async function toggleReplyInput(comment) {
+  // 수정창 닫기
+  cancelEdit()
+  // 다른 답글 입력창 닫기
+  comments.value.forEach((c) => {
+    if (c.id !== comment.id) c.showReplyInput = false
+  })
+
   comment.showReplyInput = !comment.showReplyInput
   if (comment.showReplyInput && comment.replyCount > 0 && !comment.repliesLoaded) {
     await loadReplies(comment)
@@ -583,8 +606,8 @@ async function scrollToTargetComment(targetId) {
                   </div>
                 </div>
                 <template v-if="post.logImages.length > 1">
-                  <button class="img-arrow img-arrow-left" @click="prevImage">‹</button>
-                  <button class="img-arrow img-arrow-right" @click="nextImage">›</button>
+                  <button v-if="currentImageIndex > 0" class="img-arrow img-arrow-left" @click="prevImage">‹</button>
+                  <button v-if="currentImageIndex < post.logImages.length - 1" class="img-arrow img-arrow-right" @click="nextImage">›</button>
                 </template>
               </div>
 
@@ -685,7 +708,9 @@ async function scrollToTargetComment(targetId) {
                     class="comment-item"
                     :class="{ 'comment-highlighted': highlightedCommentId === comment.id }"
                   >
+                    <!-- 삭제된 댓글: 아바타 클릭 불가, 빈 상태 -->
                     <div
+                      v-if="!comment.isDeleted"
                       class="comment-avatar"
                       style="cursor: pointer"
                       @click="router.push(`/mypage/${comment.authorId}`)"
@@ -708,9 +733,23 @@ async function scrollToTargetComment(targetId) {
                         <circle cx="12" cy="7" r="4" />
                       </svg>
                     </div>
+                    <div v-else class="comment-avatar">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#cbd5e0"
+                        stroke-width="2"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </div>
                     <div class="comment-body">
                       <div class="comment-meta">
                         <span
+                          v-if="!comment.isDeleted"
                           class="comment-author"
                           style="cursor: pointer"
                           @click="router.push(`/mypage/${comment.authorId}`)"
@@ -718,7 +757,7 @@ async function scrollToTargetComment(targetId) {
                         >
                         <span class="comment-date">{{ comment.createdAt }}</span>
                         <div
-                          v-if="comment.authorId === auth.userId || isOwner"
+                          v-if="!comment.isDeleted && (comment.authorId === auth.userId || isOwner)"
                           class="comment-meta-actions"
                         >
                           <button
@@ -754,9 +793,9 @@ async function scrollToTargetComment(targetId) {
                           </div>
                         </div>
                       </div>
-                      <p v-else class="comment-text">{{ comment.content }}</p>
+                      <p v-else class="comment-text" :class="{ 'comment-deleted-text': comment.isDeleted }">{{ comment.content }}</p>
                       <div class="comment-actions">
-                        <button class="text-btn" @click="toggleReplyInput(comment)">
+                        <button v-if="!comment.isDeleted" class="text-btn" @click="toggleReplyInput(comment)">
                           답글 달기
                         </button>
                         <button
@@ -1126,6 +1165,12 @@ async function scrollToTargetComment(targetId) {
 
 .img-dot.active {
   background: #fff;
+}
+
+/* 삭제된 댓글 텍스트 */
+.comment-deleted-text {
+  color: #a0aec0;
+  font-style: italic;
 }
 
 /* 댓글 무한 스크롤 */

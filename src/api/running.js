@@ -2,6 +2,7 @@ import api from './index.js'
 
 export function createRunning({
   runDate,
+  runTime,
   distance,
   durationMin,
   durationSec,
@@ -11,6 +12,7 @@ export function createRunning({
 }) {
   const formData = new FormData()
   formData.append('runDate', runDate)
+  if (runTime) formData.append('runTime', runTime)
   formData.append('distance', distance)
   formData.append('durationMin', durationMin)
   formData.append('durationSec', durationSec)

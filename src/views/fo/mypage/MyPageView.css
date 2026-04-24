@@ -37,6 +37,11 @@
   background: #f7f8fc;
 }
 
+/* ── 친구 사이드바 정렬 (main-wrap padding-top 과 맞춤) ── */
+.friend-sidebar {
+  padding-top: 12px;
+}
+
 /* ── 페이지 그리드 ── */
 .page-grid {
   display: grid;
@@ -231,6 +236,33 @@
   margin: 16px 0 0;
   line-height: 1.5;
   word-break: break-word;
+}
+
+/* ── 러닝일지 작성 버튼 ── */
+.mypage-write-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  background: linear-gradient(135deg, #3b5bdb 0%, #5c7cfa 100%);
+  opacity: 1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(59, 91, 219, 0.28);
+  letter-spacing: 0.2px;
+  margin-top: 8px;
+}
+
+.mypage-write-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(59, 91, 219, 0.36);
 }
 
 /* ── 구분선 ── */

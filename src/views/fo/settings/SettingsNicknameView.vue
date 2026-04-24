@@ -9,36 +9,40 @@ import { updateNickname } from '@/api/user.js'
 const router = useRouter()
 const auth = useAuthStore()
 
-const nickname = ref('')
+const nickname = ref(auth.nickname ?? '')
+const hasTouched = ref(false)
 const isDuplicateChecked = ref(false)
 const duplicateMessage = ref('')
 const duplicateStatus = ref('')
 const isNicknameLoading = ref(false)
-const nicknameSaveMsg = ref('')
 
 const nicknamePattern = /^[가-힣a-zA-Z0-9]{5,20}$/
 
 const nicknameError = computed(() => {
-  if (!nickname.value) return ''
+  if (!nickname.value || !hasTouched.value) return ''
+  if (nickname.value === auth.nickname) return '현재 닉네임과 동일합니다.'
   if (nickname.value.includes(' ')) return '공백은 사용할 수 없습니다.'
+  if (/[ㄱ-ㅎㅏ-ㅣ]/.test(nickname.value)) return '한글 자음/모음만 단독으로 사용할 수 없습니다.'
   if (!nicknamePattern.test(nickname.value)) return '5~20자, 한글/영문/숫자만 사용 가능합니다.'
   return ''
 })
 
 const canSaveNickname = computed(() => {
   return (
+    hasTouched.value &&
     !nicknameError.value &&
     nickname.value.length >= 5 &&
+    nickname.value !== auth.nickname &&
     isDuplicateChecked.value &&
     duplicateStatus.value === 'ok'
   )
 })
 
 function onNicknameInput() {
+  hasTouched.value = true
   isDuplicateChecked.value = false
   duplicateMessage.value = ''
   duplicateStatus.value = ''
-  nicknameSaveMsg.value = ''
 }
 
 async function checkDuplicate() {
@@ -66,13 +70,10 @@ async function handleSaveNickname() {
   try {
     await updateNickname(nickname.value)
     auth.setNickname(nickname.value)
-    nicknameSaveMsg.value = '닉네임이 변경되었습니다.'
-    nickname.value = ''
-    isDuplicateChecked.value = false
-    duplicateMessage.value = ''
-    duplicateStatus.value = ''
+    alert('닉네임이 변경되었습니다.')
+    router.back()
   } catch (e) {
-    nicknameSaveMsg.value = e.response?.data?.message ?? '닉네임 변경에 실패했습니다.'
+    alert(e.response?.data?.message ?? '닉네임 변경에 실패했습니다.')
   } finally {
     isNicknameLoading.value = false
   }
@@ -86,7 +87,16 @@ async function handleSaveNickname() {
       <div class="main-wrap">
         <div class="page-header">
           <button class="btn-back" @click="router.push('/settings')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
@@ -100,7 +110,7 @@ async function handleSaveNickname() {
             <input
               v-model="nickname"
               type="text"
-              placeholder="새 닉네임 입력"
+              placeholder="닉네임을 입력하세요"
               maxlength="20"
               class="nickname-input"
               :class="{ 'input-error': nicknameError }"
@@ -124,8 +134,6 @@ async function handleSaveNickname() {
             {{ duplicateMessage }}
           </p>
           <p v-else-if="nickname" class="msg msg-hint">{{ nickname.length }}/20</p>
-
-          <p v-if="nicknameSaveMsg" class="msg msg-save">{{ nicknameSaveMsg }}</p>
 
           <button
             class="btn-save"

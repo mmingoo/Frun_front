@@ -16,13 +16,13 @@ const imageIndexMap = ref({})
 function getIndex(postId) {
   return imageIndexMap.value[postId] ?? 0
 }
-function prev(postId, length) {
+function prev(postId) {
   const cur = getIndex(postId)
-  imageIndexMap.value[postId] = (cur - 1 + length) % length
+  if (cur > 0) imageIndexMap.value[postId] = cur - 1
 }
 function next(postId, length) {
   const cur = getIndex(postId)
-  imageIndexMap.value[postId] = (cur + 1) % length
+  if (cur < length - 1) imageIndexMap.value[postId] = cur + 1
 }
 </script>
 
@@ -62,8 +62,8 @@ function next(postId, length) {
       </div>
       <!-- 화살표 (photo-inner 바깥에 위치) -->
       <template v-if="post.photos.length > 1">
-        <button class="arrow arrow-left" @click.stop="prev(post.id, post.photos.length)">‹</button>
-        <button class="arrow arrow-right" @click.stop="next(post.id, post.photos.length)">›</button>
+        <button v-if="getIndex(post.id) > 0" class="arrow arrow-left" @click.stop="prev(post.id)">‹</button>
+        <button v-if="getIndex(post.id) < post.photos.length - 1" class="arrow arrow-right" @click.stop="next(post.id, post.photos.length)">›</button>
       </template>
     </div>
 
@@ -160,7 +160,7 @@ function next(postId, length) {
     </footer>
 
     <!-- 메모 -->
-    <p v-if="post.memo" class="memo">{{ post.memo }}</p>
+    <p v-if="post.memo" class="memo" style="cursor: pointer" @click="emit('detail', post)">{{ post.memo }}</p>
   </article>
 </template>
 

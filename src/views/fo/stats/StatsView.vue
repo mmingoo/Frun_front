@@ -23,10 +23,18 @@ const thisMonthFirst = `${today.getFullYear()}-${String(today.getMonth() + 1).pa
 const todayStr = today.toISOString().slice(0, 10)
 
 // ── 기간별 날짜 ───────────────────────────────────────────
+const MIN_DATE = '2026-02-01'
+
 const periodFrom = ref(thisMonthFirst)
 const periodTo = ref(todayStr)
 const appliedFrom = ref(thisMonthFirst)
 const appliedTo = ref(todayStr)
+
+function clampDate(v) {
+  if (!v || v < MIN_DATE) return MIN_DATE
+  if (v > todayStr) return todayStr
+  return v
+}
 
 // ── 포맷 헬퍼 ─────────────────────────────────────────────
 const DAY_OF_WEEK_MAP = {
@@ -173,8 +181,24 @@ function fetchStats() {
 }
 
 function searchPeriod() {
-  appliedFrom.value = periodFrom.value
-  appliedTo.value = periodTo.value
+  // 1. 시작일(from) 검증: 오늘보다 미래 날짜면 MIN_DATE('2026-02-01')로 설정
+  let from = periodFrom.value
+  if (from > todayStr) {
+    from = MIN_DATE
+  } else {
+    from = clampDate(from)
+  }
+
+  // 2. 종료일(to) 검증: 기존 로직 유지 (비어있거나 범위를 벗어나면 오늘로)
+  const rawTo = periodTo.value
+  const to = !rawTo || rawTo <= MIN_DATE || rawTo >= todayStr ? todayStr : rawTo
+
+  // 3. 상태 업데이트 및 API 호출
+  periodFrom.value = from
+  periodTo.value = to
+  appliedFrom.value = from
+  appliedTo.value = to
+
   fetchPeriod()
 }
 
@@ -331,9 +355,21 @@ const friendPanelTitle = computed(() => {
         </button>
 
         <div v-if="activeTab === 'period'" class="period-picker">
-          <input type="date" v-model="periodFrom" class="date-input" />
+          <input
+            type="date"
+            v-model="periodFrom"
+            class="date-input"
+            min="2026-02-01"
+            :max="todayStr"
+          />
           <span class="period-sep">~</span>
-          <input type="date" v-model="periodTo" class="date-input" />
+          <input
+            type="date"
+            v-model="periodTo"
+            class="date-input"
+            min="2026-02-01"
+            :max="todayStr"
+          />
           <button class="period-search-btn" @click="searchPeriod">조회</button>
         </div>
         <div v-else class="period-picker-placeholder" />

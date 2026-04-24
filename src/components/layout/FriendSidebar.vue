@@ -7,6 +7,8 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
 
+const emit = defineEmits(['friend-deleted'])
+
 const visibleFriends = ref([])
 const isLoadingFriends = ref(false)
 const hasMoreFriends = ref(true)
@@ -81,6 +83,7 @@ async function executeDelete() {
   try {
     await deleteFriend(friend.id)
     visibleFriends.value = visibleFriends.value.filter((f) => f.id !== friend.id)
+    emit('friend-deleted')
     alert('친구를 삭제하였습니다.')
   } catch (e) {
     const message = e.response?.data?.message

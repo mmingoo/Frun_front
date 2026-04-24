@@ -113,15 +113,16 @@ async function loadProfile() {
     }
   } catch (e) {
     if (e.response?.data?.code === 'ACCOUNT_INACTIVE') return
-    const message = e.response?.data?.message
-    if (message) {
-      alert(message)
-      router.replace('/feed')
-    } else {
+    const status = e.response?.status
+    if (status === 404) {
       router.replace({
         name: 'NotFoundView',
         params: { pathMatch: route.path.split('/').slice(1) },
       })
+    } else {
+      const message = e.response?.data?.message
+      alert(message)
+      router.replace('/feed')
     }
   } finally {
     isLoadingProfile.value = false
@@ -229,7 +230,7 @@ async function confirmDelete() {
 
     <!-- ── 메인 ── -->
     <div class="page-grid">
-      <FriendSidebar :key="sidebarKey" />
+      <FriendSidebar :key="sidebarKey" @friend-deleted="initPage" />
       <div class="main-wrap">
         <!-- ── 프로필 헤더 (인스타그램 스타일) ── -->
         <div class="profile-box">
@@ -303,6 +304,26 @@ async function confirmDelete() {
             <p v-if="profile.bio" class="profile-bio">{{ profile.bio }}</p>
           </div>
         </div>
+
+        <!-- ── 러닝일지 작성 버튼 (본인 페이지) ── -->
+        <button
+          v-if="profile?.isOwner"
+          class="mypage-write-btn"
+          @click="router.push('/running/write')"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          러닝일지 작성
+        </button>
 
         <!-- ── 게시물 그리드 ── -->
         <div v-if="posts.length === 0 && !isLoadingPosts" class="empty-wrap">
