@@ -269,6 +269,16 @@
   color: #c53030;
 }
 
+.noti-item.restore {
+  background: #f0fff4;
+  border-color: #c6f6d5;
+  cursor: default;
+}
+
+.noti-item.restore .noti-text {
+  color: #276749;
+}
+
 .noti-avatar-wrap {
   position: relative;
   flex-shrink: 0;

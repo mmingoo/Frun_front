@@ -175,7 +175,7 @@ onBeforeUnmount(() => {
 })
 
 function goToDetail(post) {
-  router.push(`/feed/${post.id}/${post.authorId}`)
+  router.push(`/feed/${post.id}`)
 }
 
 // ── 좋아요 ────────────────────────────────────────────────

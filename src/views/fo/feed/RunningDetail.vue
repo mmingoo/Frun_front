@@ -37,12 +37,12 @@ onMounted(async () => {
       auth.setProfileImage(`${BASE_URL}${res.data.data.profileImageUrl}`)
     }
   }
-  const { runningLogId, authorId } = route.params
+  const { runningLogId } = route.params
 
   // 러닝일지 조회
   try {
     // 러닝일지 정보 조회
-    const res = await getRunningLogDetail(runningLogId, authorId)
+    const res = await getRunningLogDetail(runningLogId)
     const d = res.data.data
 
     post.value = {
@@ -64,14 +64,14 @@ onMounted(async () => {
     }
   } catch (e) {
     const status = e.response?.status
-    if (status === 404) {
+    const message = e.response?.data?.message
+    if (status === 404 && !message) {
       router.replace({
         name: 'NotFoundView',
         params: { pathMatch: route.path.split('/').slice(1) },
       })
       return
     }
-    const message = e.response?.data?.message
     alert(message)
     router.push(`/feed`)
   } finally {
@@ -180,7 +180,7 @@ async function loadMoreComments() {
         content: c.content,
         createdAt: c.createdAt?.slice(0, 16).replace('T', ' ') ?? '',
         replyCount: c.replyCount,
-        isDeleted: c.isDeleted ?? c.deleted ?? (c.userId === null),
+        isDeleted: c.isDeleted ?? c.deleted ?? c.userId === null,
         replies: [],
         showReplyInput: false,
         replyInput: '',
@@ -272,14 +272,22 @@ async function confirmDeleteComment() {
   if (!target) return
   try {
     const id = target.type === 'comment' ? target.commentId : target.replyId
-    await deleteCommentApi(id)
+    const res = await deleteCommentApi(id)
+    const { deleteType, deletedReplyCount = 0 } = res.data?.data ?? {}
+
     if (target.type === 'comment') {
       const idx = comments.value.findIndex((c) => c.id === target.commentId)
       if (idx !== -1) {
-        const deleted = comments.value[idx]
-        const hasReplies = (deleted.replyCount ?? 0) > 0
-        if (hasReplies) {
-          // 답글이 있으면 소프트 삭제 → 플레이스홀더로 전환 (객체 교체로 반응성 보장)
+        if (deleteType === 'CASCADE') {
+          // 댓글 + 모든 답글 완전 제거, 서버 응답의 deletedReplyCount 사용
+          const removedCount = 1 + deletedReplyCount
+          comments.value.splice(idx, 1)
+          totalCommentCount.value = Math.max(0, totalCommentCount.value - removedCount)
+          if (post.value)
+            post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - removedCount)
+        } else if (deleteType === 'SOFT') {
+          // 답글 유지, 댓글 내용만 플레이스홀더로 교체
+          const deleted = comments.value[idx]
           comments.value.splice(idx, 1, {
             ...deleted,
             isDeleted: true,
@@ -288,22 +296,35 @@ async function confirmDeleteComment() {
             nickname: null,
             profileImage: null,
           })
+          totalCommentCount.value = Math.max(0, totalCommentCount.value - 1)
+          if (post.value)
+            post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - 1)
         } else {
+          // HARD: 댓글 단건 완전 제거
           comments.value.splice(idx, 1)
+          totalCommentCount.value = Math.max(0, totalCommentCount.value - 1)
+          if (post.value)
+            post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - 1)
         }
-        totalCommentCount.value = Math.max(0, totalCommentCount.value - 1)
-        if (post.value) post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - 1)
       }
       alert('댓글을 삭제하였습니다.')
     } else {
-      const comment = comments.value.find((c) => c.id === target.commentId)
+      const commentIdx = comments.value.findIndex((c) => c.id === target.commentId)
+      const comment = comments.value[commentIdx]
       if (comment) {
-        const idx = comment.replies.findIndex((r) => r.id === target.replyId)
-        if (idx !== -1) {
-          comment.replies.splice(idx, 1)
+        const replyIdx = comment.replies.findIndex((r) => r.id === target.replyId)
+        if (replyIdx !== -1) {
+          comment.replies.splice(replyIdx, 1)
           comment.replyCount = Math.max(0, (comment.replyCount ?? 0) - 1)
           totalCommentCount.value = Math.max(0, totalCommentCount.value - 1)
           if (post.value) post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - 1)
+        }
+        if (deleteType === 'HARD_WITH_PARENT' && commentIdx !== -1) {
+          // 답글 삭제 시 소프트 삭제 상태의 부모 댓글도 함께 영구 삭제됨
+          comments.value.splice(commentIdx, 1)
+          totalCommentCount.value = Math.max(0, totalCommentCount.value - 1)
+          if (post.value)
+            post.value.commentCount = Math.max(0, (post.value.commentCount ?? 0) - 1)
         }
       }
       alert('답글을 삭제하였습니다.')
@@ -420,6 +441,9 @@ const editingContent = ref('')
 function startEdit(id, content) {
   editingId.value = id
   editingContent.value = content
+  comments.value.forEach((c) => {
+    c.showReplyInput = false
+  })
 }
 
 function cancelEdit() {
@@ -606,8 +630,20 @@ async function scrollToTargetComment(targetId) {
                   </div>
                 </div>
                 <template v-if="post.logImages.length > 1">
-                  <button v-if="currentImageIndex > 0" class="img-arrow img-arrow-left" @click="prevImage">‹</button>
-                  <button v-if="currentImageIndex < post.logImages.length - 1" class="img-arrow img-arrow-right" @click="nextImage">›</button>
+                  <button
+                    v-if="currentImageIndex > 0"
+                    class="img-arrow img-arrow-left"
+                    @click="prevImage"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    v-if="currentImageIndex < post.logImages.length - 1"
+                    class="img-arrow img-arrow-right"
+                    @click="nextImage"
+                  >
+                    ›
+                  </button>
                 </template>
               </div>
 
@@ -761,7 +797,7 @@ async function scrollToTargetComment(targetId) {
                           class="comment-meta-actions"
                         >
                           <button
-                            v-if="comment.authorId === auth.userId"
+                            v-if="comment.authorId === auth.userId && editingId !== comment.id"
                             class="text-btn text-btn-edit"
                             @click="startEdit(comment.id, comment.content)"
                           >
@@ -793,9 +829,19 @@ async function scrollToTargetComment(targetId) {
                           </div>
                         </div>
                       </div>
-                      <p v-else class="comment-text" :class="{ 'comment-deleted-text': comment.isDeleted }">{{ comment.content }}</p>
+                      <p
+                        v-else
+                        class="comment-text"
+                        :class="{ 'comment-deleted-text': comment.isDeleted }"
+                      >
+                        {{ comment.content }}
+                      </p>
                       <div class="comment-actions">
-                        <button v-if="!comment.isDeleted" class="text-btn" @click="toggleReplyInput(comment)">
+                        <button
+                          v-if="!comment.isDeleted"
+                          class="text-btn"
+                          @click="toggleReplyInput(comment)"
+                        >
                           답글 달기
                         </button>
                         <button
@@ -856,7 +902,7 @@ async function scrollToTargetComment(targetId) {
                             class="comment-meta-actions"
                           >
                             <button
-                              v-if="reply.authorId === auth.userId"
+                              v-if="reply.authorId === auth.userId && editingId !== reply.id"
                               class="text-btn text-btn-edit"
                               @click="startEdit(reply.id, reply.content)"
                             >
@@ -1086,6 +1132,7 @@ async function scrollToTargetComment(targetId) {
   color: #4a5568;
   line-height: 1.55;
   margin: 0;
+  white-space: pre-wrap;
 }
 
 /* 이미지 슬라이더 */

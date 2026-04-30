@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { updateRunning } from '@/api/running.js'
 import { getRunningLogDetail } from '@/api/feed.js'
@@ -225,7 +225,10 @@ onMounted(async () => {
   } finally {
     isFetching.value = false
   }
+  window.addEventListener('keydown', onKeydown)
 })
+
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 async function handleSubmit() {
   if (!canSubmit.value) return
@@ -258,6 +261,21 @@ async function handleSubmit() {
 
 function handleCancel() {
   router.back()
+}
+
+// 사진 라이트박스
+const lightboxSrc = ref(null)
+
+function viewPhoto(src) {
+  lightboxSrc.value = src
+}
+
+function closeLightbox() {
+  lightboxSrc.value = null
+}
+
+function onKeydown(e) {
+  if (e.key === 'Escape') closeLightbox()
 }
 </script>
 
@@ -427,7 +445,7 @@ function handleCancel() {
             <div class="photo-grid">
               <!-- 기존 사진 -->
               <div v-for="(photo, i) in existingPhotos" :key="`existing-${i}`" class="photo-item">
-                <img :src="photo.preview" :alt="`사진 ${i + 1}`" class="photo-preview" />
+                <img :src="photo.preview" :alt="`사진 ${i + 1}`" class="photo-preview" @click="viewPhoto(photo.preview)" />
                 <button type="button" class="photo-remove" @click="removeExistingPhoto(i)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                     <path
@@ -441,7 +459,7 @@ function handleCancel() {
               </div>
               <!-- 새로 추가한 사진 -->
               <div v-for="(photo, i) in newPhotos" :key="`new-${i}`" class="photo-item">
-                <img :src="photo.preview" :alt="`새 사진 ${i + 1}`" class="photo-preview" />
+                <img :src="photo.preview" :alt="`새 사진 ${i + 1}`" class="photo-preview" @click="viewPhoto(photo.preview)" />
                 <button type="button" class="photo-remove" @click="removeNewPhoto(i)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                     <path
@@ -576,20 +594,16 @@ function handleCancel() {
       </template>
     </div>
   </div>
+
+  <!-- 사진 라이트박스 -->
+  <Teleport to="body">
+    <div v-if="lightboxSrc" class="lightbox-overlay" @click.self="closeLightbox">
+      <button class="lightbox-close" @click="closeLightbox">✕</button>
+      <img :src="lightboxSrc" class="lightbox-img" alt="사진 전체보기" />
+    </div>
+  </Teleport>
 </template>
 
 <style scoped src="./WriteRunning.css" />
-
-<style scoped>
-.state-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 100px 0;
-}
-
-.error-text {
-  font-size: 15px;
-  color: #e53e3e;
-}
-</style>
+<style src="./EditRunning.css" />
+<style scoped src="./EditRunning.css" />

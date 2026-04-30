@@ -4,14 +4,14 @@ export function reportPost(runningLogId, reportReason) {
   return api.post(`/api/v1/reports/${runningLogId}`, { reportReason })
 }
 
-export function getFeed(cursorId, size = 10) {
+export function getFeed(cursorId, size = 30) {
   return api.get('/api/v1/running-logs/feed', {
     params: { cursorId: cursorId ?? undefined, size },
   })
 }
 
-export function getRunningLogDetail(runningLogId, authorId) {
-  return api.get(`/api/v1/running-logs/${runningLogId}/${authorId}`)
+export function getRunningLogDetail(runningLogId) {
+  return api.get(`/api/v1/running-logs/${runningLogId}`)
 }
 
 export function updatedRunning(

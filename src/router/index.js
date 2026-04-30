@@ -60,7 +60,7 @@ const router = createRouter({
       component: EditRunning,
     },
     {
-      path: '/feed/:runningLogId/:authorId',
+      path: '/feed/:runningLogId',
       name: 'RunningDetail',
       component: RunningDetail,
     },
@@ -129,9 +129,8 @@ const router = createRouter({
 
 // 모든 페이지 이동 전에 실행
 router.beforeEach(async (to) => {
-  // /inactive, NotFoundView 는 가드 없이 통과
+  // /inactive 는 가드 없이 통과
   if (to.path === '/inactive') return true
-  if (to.name === 'NotFoundView') return true
 
   // 비활성화 계정으로 강제 로그아웃된 경우 → API 호출 없이 랜딩 페이지 표시
   if (sessionStorage.getItem('_accountInactive')) {
@@ -169,6 +168,7 @@ router.beforeEach(async (to) => {
       const res = await api.get('/api/v1/users/me/nickname-status')
       auth.hasNickname = res.data.data.hasNickname
     } catch {
+      alert('로그인 후 이용해주세요.')
       return '/'
     }
   }
@@ -178,10 +178,16 @@ router.beforeEach(async (to) => {
     if (auth.hasNickname) return '/feed'
     // 약관 동의 없이 닉네임 설정 페이지에 직접 접근하면 약관 화면으로 이동
     if (to.path === '/signup/nickname' && !auth.termsAgreed) return '/signup/terms'
+    // 가입 진행 중 상태로 표시 (페이지 새로고침 후에도 유지)
+    sessionStorage.setItem('_inSignupFlow', '1')
     return true
   }
 
-  if (!auth.hasNickname) return '/signup/terms'
+  if (!auth.hasNickname) {
+    // 가입 진행 중에 다른 URL로 접근한 경우에만 alert
+    if (sessionStorage.getItem('_inSignupFlow')) alert('약관 동의와 닉네임 설정 후 이용해주세요.')
+    return '/signup/terms'
+  }
 })
 
 export default router

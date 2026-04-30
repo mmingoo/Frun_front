@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.js'
-import { getTermsList } from '@/api/auth.js'
+import { getTermsList, logout } from '@/api/auth.js'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -48,6 +48,18 @@ function handleNext() {
 
 function formatContent(content) {
   return content.replace(/\n/g, '<br />')
+}
+
+async function handleCancel() {
+  try {
+    await logout()
+  } catch {
+    // 실패해도 클라이언트 상태는 초기화
+  }
+  auth.logout()
+  sessionStorage.removeItem('_inSignupFlow')
+  alert('로그아웃 하였습니다.')
+  router.push('/')
 }
 </script>
 
@@ -125,6 +137,7 @@ function formatContent(content) {
 
       <!-- 다음 버튼 -->
       <button class="btn-next" :disabled="!canNext" @click="handleNext">다음</button>
+      <button class="btn-cancel" @click="handleCancel">취소</button>
     </div>
   </div>
 </template>

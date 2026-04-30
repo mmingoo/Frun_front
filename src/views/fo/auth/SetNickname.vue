@@ -1,8 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.js'
-import { checkNickname, setNickname, agreeTerms } from '@/api/auth.js'
+import { checkNickname, setNickname, agreeTerms, logout } from '@/api/auth.js'
 
 // termsId: 1=서비스 이용약관, 2=개인정보처리방침, 3=마케팅 정보 수신
 const TERMS_SERVICE_ID = 1
@@ -19,6 +19,7 @@ const isDuplicateChecked = ref(false)
 const duplicateMessage = ref('')
 const duplicateStatus = ref('') // 'ok' | 'error' | ''
 const isLoading = ref(false)
+let _savedCheckState = null // captured on file input click, before the nickname watcher runs
 
 const nicknamePattern = /^[가-힣a-zA-Z0-9]{5,20}$/
 
@@ -38,10 +39,22 @@ const canSubmit = computed(() => {
   )
 })
 
-function onNicknameInput() {
+watch(nickname, () => {
   isDuplicateChecked.value = false
   duplicateMessage.value = ''
   duplicateStatus.value = ''
+})
+
+function onProfileClick() {
+  // 파일 picker가 열리기 전, nickname watcher가 실행되기 전 시점에 상태를 캡처
+  // (포커스 이탈 시 IME 조합 확정 → nickname 변경 → watcher 실행 순서로 인해
+  //  onProfileChange가 호출될 때는 이미 watcher가 상태를 초기화한 후임)
+  _savedCheckState = {
+    checked: isDuplicateChecked.value,
+    message: duplicateMessage.value,
+    status: duplicateStatus.value,
+    nickname: nickname.value,
+  }
 }
 
 function onProfileChange(e) {
@@ -57,6 +70,14 @@ function onProfileChange(e) {
   }
   profileImage.value = file
   profilePreview.value = URL.createObjectURL(file)
+
+  // 닉네임이 바뀌지 않았다면 중복확인 상태를 복원
+  const saved = _savedCheckState
+  if (saved?.checked && saved.nickname === nickname.value) {
+    isDuplicateChecked.value = true
+    duplicateMessage.value = saved.message
+    duplicateStatus.value = saved.status
+  }
 }
 
 async function checkDuplicate() {
@@ -89,12 +110,25 @@ async function handleSubmit() {
     ])
     await setNickname(nickname.value, profileImage.value)
     auth.hasNickname = true
+    sessionStorage.removeItem('_inSignupFlow')
     router.push('/feed')
   } catch {
     alert('닉네임 저장에 실패했습니다. 다시 시도해주세요.')
   } finally {
     isLoading.value = false
   }
+}
+
+async function handleCancel() {
+  try {
+    await logout()
+  } catch {
+    // 실패해도 클라이언트 상태는 초기화
+  }
+  auth.logout()
+  sessionStorage.removeItem('_inSignupFlow')
+  alert('로그아웃 하였습니다.')
+  router.push('/')
 }
 </script>
 
@@ -136,6 +170,7 @@ async function handleSubmit() {
         type="file"
         accept=".jpg,.jpeg,.png"
         class="hidden"
+        @click="onProfileClick"
         @change="onProfileChange"
       />
     </div>
@@ -151,7 +186,6 @@ async function handleSubmit() {
           maxlength="20"
           class="nickname-input"
           :class="{ 'input-error': nicknameError }"
-          @input="onNicknameInput"
         />
         <button
           class="btn-check"
@@ -179,6 +213,7 @@ async function handleSubmit() {
       <span v-if="isLoading" class="spinner" />
       <span v-else>시작하기</span>
     </button>
+    <button class="btn-cancel" @click="handleCancel">취소</button>
   </div>
 </template>
 

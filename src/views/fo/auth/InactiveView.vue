@@ -57,6 +57,7 @@ onMounted(async () => {
 
 async function handleActivate() {
   isLoading.value = true
+
   try {
     // 임시 토큰으로 활성화 → 백엔드가 refreshToken 쿠키 발급
     await activateAccount(tempToken.value)

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from '@/components/layout/NavBar.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -11,8 +11,6 @@ const router = useRouter()
 const searchInput = ref('')
 const searchResults = ref([])
 const hasSearched = ref(false)
-const isLoading = ref(false)
-const isComposing = ref(false)
 
 let debounceTimer = null
 let abortController = null
@@ -25,20 +23,12 @@ function scheduleSearch(val) {
     hasSearched.value = false
     return
   }
-  debounceTimer = setTimeout(() => doSearch(val), 300)
+  debounceTimer = setTimeout(() => doSearch(val), 500)
 }
 
-watch(searchInput, (val) => {
-  if (isComposing.value) return
-  scheduleSearch(val)
-})
-
-function onCompositionStart() {
-  isComposing.value = true
-}
-
-function onCompositionEnd(e) {
-  isComposing.value = false
+function onInput(e) {
+  // e.target.value는 IME 조합 중에도 실제 표시값을 반환하므로
+  // 한국어 입력 시 compositionend 없이도 즉시 검색 트리거 가능
   scheduleSearch(e.target.value)
 }
 
@@ -49,10 +39,8 @@ async function doSearch(keyword) {
   abortController?.abort()
   abortController = new AbortController()
 
-  isLoading.value = true
-  hasSearched.value = true
   try {
-    const res = await searchFriend(keyword, null, null, 20, abortController.signal)
+    const res = await searchFriend(keyword, null, 20, abortController.signal)
     const data = res.data.data
     searchResults.value = (data.users ?? []).map((u) => ({
       id: u.userId,
@@ -60,12 +48,12 @@ async function doSearch(keyword) {
       profileImage: u.profileImageUrl ? `${BASE_URL}${u.profileImageUrl}` : null,
       friendStatus: u.friendStatus ?? 'NONE',
     }))
+    hasSearched.value = true
   } catch (e) {
     if (e.name === 'CanceledError' || e.code === 'ERR_CANCELED') return
     console.error('친구 검색 실패', e)
     searchResults.value = []
-  } finally {
-    isLoading.value = false
+    hasSearched.value = true
   }
 }
 
@@ -141,9 +129,8 @@ async function handleDeleteFriend(user) {
             type="text"
             class="search-input"
             placeholder="닉네임으로 친구 검색"
+            @input="onInput"
             @keydown.enter="doSearch"
-            @compositionstart="onCompositionStart"
-            @compositionend="onCompositionEnd"
           />
         </div>
         <button class="search-btn" @click="doSearch">검색</button>
@@ -152,8 +139,7 @@ async function handleDeleteFriend(user) {
       <!-- 검색 결과 -->
       <div v-if="hasSearched && searchInput.trim()" class="section">
         <h2 class="section-title">검색 결과</h2>
-        <div v-if="isLoading" class="empty-text">검색 중...</div>
-        <div v-else-if="searchResults.length === 0" class="empty-text">검색 결과가 없습니다.</div>
+        <div v-if="searchResults.length === 0" class="empty-text">검색 결과가 없습니다.</div>
         <ul v-else class="friend-list">
           <li v-for="user in searchResults" :key="user.id" class="friend-item">
             <div

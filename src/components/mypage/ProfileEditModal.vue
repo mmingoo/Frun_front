@@ -41,7 +41,7 @@ function onProfileImageChange(e) {
     return
   }
   if (file.size > MAX_SIZE) {
-    imageError.value = '파일 크기는 최대 3MB까지 가능합니다.'
+    alert('파일 크기는 최대 3MB입니다.')
     e.target.value = ''
     return
   }

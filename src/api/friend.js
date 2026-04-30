@@ -1,14 +1,14 @@
 import api from './index'
 
-export function getFriendList(cursorname, cursorId, size = 10) {
+export function getFriendList(cursorname, size = 10) {
   return api.get('/api/v1/friend/friend-list', {
-    params: { cursorName: cursorname ?? undefined, cursorId: cursorId ?? undefined, size },
+    params: { cursorName: cursorname ?? undefined, size },
   })
 }
 
-export function searchFriend(keyword, cursorname, cursorId, size, signal) {
+export function searchFriend(keyword, cursorname, size, signal) {
   return api.get('/api/v1/friend/search', {
-    params: { keyword, cursorname, cursorId, size },
+    params: { keyword, cursorName: cursorname ?? undefined, size },
     signal,
   })
 }

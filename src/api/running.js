@@ -22,9 +22,14 @@ export function createRunning({
   return api.post('/api/v1/running-logs', formData)
 }
 
-export function getUserRunningLogs(userId, cursorId, size = 10) {
+export function getUserRunningLogs(userId, { cursorId, cursorValue, sortType = 'CREATED_AT', size = 10 } = {}) {
   return api.get(`/api/v1/running-logs/users/${userId}/feeds`, {
-    params: { cursorId: cursorId ?? undefined, size },
+    params: {
+      cursorId: cursorId ?? undefined,
+      cursorValue: cursorValue ?? undefined,
+      sortType,
+      size,
+    },
   })
 }
 

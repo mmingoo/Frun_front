@@ -129,15 +129,30 @@ async function fetchMonthly() {
 
     monthStats.value = formatSummary(summary)
 
+    // 이번 달 1일이 속한 주의 월요일 계산 (백엔드와 동일한 로직)
+    const monthFirstDay = new Date(today.getFullYear(), today.getMonth(), 1)
+    const daysToMonday = (monthFirstDay.getDay() + 6) % 7
+    const firstWeekMonday = new Date(monthFirstDay)
+    firstWeekMonday.setDate(monthFirstDay.getDate() - daysToMonday)
+
     // chart: [{ weekLabel, totalDistanceKm, days: [{ dayOfWeek, distanceKm }] }]
-    monthlyWeeks.value = chart.map((week) => ({
-      label: week.weekLabel,
-      total: week.totalDistanceKm,
-      days: week.days.map((d) => ({
-        label: DAY_OF_WEEK_MAP[d.dayOfWeek],
-        distance: d.distanceKm,
-      })),
-    }))
+    monthlyWeeks.value = chart.map((week, weekIdx) => {
+      const weekStartDate = new Date(firstWeekMonday)
+      weekStartDate.setDate(firstWeekMonday.getDate() + weekIdx * 7)
+      return {
+        label: week.weekLabel,
+        total: week.totalDistanceKm,
+        days: week.days.map((d, dayIdx) => {
+          const dayDate = new Date(weekStartDate)
+          dayDate.setDate(weekStartDate.getDate() + dayIdx)
+          return {
+            label: DAY_OF_WEEK_MAP[d.dayOfWeek],
+            dateLabel: `${dayDate.getMonth() + 1}/${dayDate.getDate()}`,
+            distance: d.distanceKm,
+          }
+        }),
+      }
+    })
   } catch (e) {
     errorMsg.value = '달별 데이터를 불러오지 못했습니다.'
     console.error(e)
@@ -255,11 +270,10 @@ function resetToMyStats() {
 // ── 친구 목록 로드 ────────────────────────────────────────
 async function fetchFriendList() {
   let cursorName = null
-  let cursorId = null
   const all = []
   while (true) {
-    const res = await getFriendList(cursorName, cursorId)
-    const { friends, hasNext, nextCursorName, nextCursorId } = res.data.data
+    const res = await getFriendList(cursorName)
+    const { friends, hasNext, nextCursorName } = res.data.data
     friends.forEach((f) =>
       all.push({
         userId: f.friendId,
@@ -268,9 +282,8 @@ async function fetchFriendList() {
         totalDistanceKm: 0,
       }),
     )
-    if (!hasNext || !nextCursorId || nextCursorId === cursorId) break
+    if (!hasNext || !nextCursorName) break
     cursorName = nextCursorName
-    cursorId = nextCursorId
   }
   friendRecords.value = all
 }
@@ -440,7 +453,8 @@ const friendPanelTitle = computed(() => {
                               }}</span>
                             </div>
                           </div>
-                          <span class="bar-label">{{ day.label }}</span>
+                          <span class="bar-label">{{ day.dateLabel }}</span>
+                          <span class="bar-sublabel">{{ day.label }}</span>
                         </div>
                       </div>
                     </div>

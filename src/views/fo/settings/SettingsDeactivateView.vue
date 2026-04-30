@@ -56,8 +56,8 @@ async function handleDeactivate() {
         <section class="settings-card danger-card">
           <h3 class="card-title danger-title">주의사항</h3>
           <p class="card-desc">
-            계정을 비활성화하면 프로필과 게시물이 숨겨집니다.<br />
-            계정은 <strong>3개월 후</strong>에 영구 삭제됩니다.<br />
+            계정을 비활성화하면 프로필과 게시물이 숨겨집니다.<br /><br />
+            계정은 <strong>3개월 후</strong>에 영구 삭제됩니다.<br /><br />
             3개월 이내에 언제든지 다시 로그인해 복구할 수 있습니다.
           </p>
           <button

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createRunning } from '@/api/running.js'
 import NavBar from '@/components/layout/NavBar.vue'
@@ -169,6 +169,24 @@ async function handleSubmit() {
 function handleCancel() {
   router.back()
 }
+
+// 사진 라이트박스
+const lightboxSrc = ref(null)
+
+function viewPhoto(src) {
+  lightboxSrc.value = src
+}
+
+function closeLightbox() {
+  lightboxSrc.value = null
+}
+
+function onKeydown(e) {
+  if (e.key === 'Escape') closeLightbox()
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
@@ -322,7 +340,7 @@ function handleCancel() {
           </label>
           <div class="photo-grid">
             <div v-for="(photo, i) in photos" :key="i" class="photo-item">
-              <img :src="photo.preview" :alt="`사진 ${i + 1}`" class="photo-preview" />
+              <img :src="photo.preview" :alt="`사진 ${i + 1}`" class="photo-preview" @click="viewPhoto(photo.preview)" />
               <button type="button" class="photo-remove" @click="removePhoto(i)">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                   <path
@@ -453,6 +471,57 @@ function handleCancel() {
       </form>
     </div>
   </div>
+
+  <!-- 사진 라이트박스 -->
+  <Teleport to="body">
+    <div v-if="lightboxSrc" class="lightbox-overlay" @click.self="closeLightbox">
+      <button class="lightbox-close" @click="closeLightbox">✕</button>
+      <img :src="lightboxSrc" class="lightbox-img" alt="사진 전체보기" />
+    </div>
+  </Teleport>
 </template>
 
 <style scoped src="./WriteRunning.css" />
+
+<style>
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: 12px;
+  object-fit: contain;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+</style>

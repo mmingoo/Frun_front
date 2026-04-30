@@ -1,35 +1,6 @@
 /* ── 무한스크롤 ── */
 .posts-sentinel {
   height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.posts-spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 2px solid #e2e8f0;
-  border-top-color: #3b5bdb;
-  border-radius: 50%;
-  animation: posts-spin 0.7s linear infinite;
-}
-
-@keyframes posts-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.profile-spinner {
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  border: 2px solid #e2e8f0;
-  border-top-color: #3b5bdb;
-  border-radius: 50%;
-  animation: posts-spin 0.7s linear infinite;
 }
 
 .page-wrap {
@@ -238,31 +209,71 @@
   word-break: break-word;
 }
 
+/* ── 툴바 ── */
+.post-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* ── 러닝일지 작성 버튼 ── */
 .mypage-write-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
+  gap: 6px;
   height: 30px;
+  padding: 0 150px;
   background: linear-gradient(135deg, #3b5bdb 0%, #5c7cfa 100%);
-  opacity: 1;
   color: #fff;
   border: none;
   border-radius: 8px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 4px 14px rgba(59, 91, 219, 0.28);
   letter-spacing: 0.2px;
-  margin-top: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .mypage-write-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(59, 91, 219, 0.36);
+}
+
+/* ── 정렬 버튼 ── */
+.sort-btns {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.sort-btn {
+  height: 30px;
+  padding: 0 12px;
+  background: #fff;
+  border: 1.5px solid #dbdfe9;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #718096;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.sort-btn:hover {
+  border-color: #3b5bdb;
+  color: #3b5bdb;
+}
+
+.sort-btn.active {
+  background: #eef2ff;
+  border-color: #3b5bdb;
+  color: #3b5bdb;
 }
 
 /* ── 구분선 ── */

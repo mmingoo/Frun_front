@@ -298,8 +298,8 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
-  height: 260px;
-  padding: 28px 0 18px;
+  height: 274px;
+  padding: 28px 0 32px;
   flex-shrink: 0;
   width: 30px;
 }
@@ -367,15 +367,15 @@
 .week-bars {
   display: flex;
   align-items: flex-end;
-  gap: 4px;
-  height: 260px;
+  gap: 10px;
+  height: 274px;
   padding: 0 4px;
   position: relative;
 }
 
 .week-bars .grid-layer {
   top: 16px;
-  bottom: 18px;
+  bottom: 32px;
 }
 
 /* ── 기간별 차트 ── */

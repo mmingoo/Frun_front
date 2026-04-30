@@ -191,6 +191,9 @@
 
 .btn-deactivate {
   align-self: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 42px;
   padding: 0 24px;
   background: #fff;
@@ -215,6 +218,7 @@
 
 /* 스피너 */
 .spinner {
+  display: inline-block;
   width: 18px;
   height: 18px;
   border: 2.5px solid rgba(255, 255, 255, 0.4);
@@ -243,8 +247,8 @@
 .modal {
   background: #fff;
   border-radius: 14px;
-  padding: 28px 28px 22px;
-  width: 340px;
+  padding: 28px 20px 22px;
+  width: 380px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
   display: flex;
   flex-direction: column;

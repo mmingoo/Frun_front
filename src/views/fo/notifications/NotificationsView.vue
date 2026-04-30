@@ -35,8 +35,18 @@ function getType(message) {
 }
 
 function isReport(noti) {
-  if (noti.type === 'REPORT_ACCEPTED' || noti.type === 'REPORT_REJECTED') return true
+  if (
+    noti.type === 'REPORT_ACCEPTED' ||
+    noti.type === 'REPORT_REJECTED' ||
+    noti.type === 'DELETE_PROFILE_IMAGE' ||
+    noti.type === 'DELETE_RUNNING_LOG'
+  )
+    return true
   return noti.message?.includes('신고')
+}
+
+function isRestore(noti) {
+  return noti.type === 'RESTORE_RUNNING_LOG'
 }
 
 async function loadMore() {
@@ -82,9 +92,9 @@ function handleClick(noti) {
   if (isReport(noti)) return
   noti.read = true
   if (noti.commentId) {
-    router.push(`/feed/${noti.runningLogId}/${noti.authorId}?commentId=${noti.commentId}`)
+    router.push(`/feed/${noti.runningLogId}?commentId=${noti.commentId}`)
   } else {
-    router.push(`/feed/${noti.runningLogId}/${noti.authorId}`)
+    router.push(`/feed/${noti.runningLogId}`)
   }
 }
 
@@ -210,8 +220,9 @@ async function deleteAll() {
             class="noti-item"
             :class="{
               unread: !noti.read,
-              clickable: getType(noti.message) !== 'friend' && !isReport(noti),
+              clickable: getType(noti.message) !== 'friend' && !isReport(noti) && !isRestore(noti),
               report: isReport(noti),
+              restore: isRestore(noti),
               selected: selectedIds.includes(noti.notificationId),
             }"
             @click="handleClick(noti)"
@@ -227,8 +238,8 @@ async function deleteAll() {
             <div class="noti-avatar-wrap">
               <div
                 class="noti-avatar"
-                :style="isReport(noti) ? 'cursor: default' : 'cursor: pointer'"
-                @click.stop="!isReport(noti) && router.push(`/mypage/${noti.senderId}`)"
+                :style="isReport(noti) || isRestore(noti) ? 'cursor: default' : 'cursor: pointer'"
+                @click.stop="!isReport(noti) && !isRestore(noti) && router.push(`/mypage/${noti.senderId}`)"
               >
                 <UserAvatar
                   :src="noti.userProfileImageUrl ? `${BASE_URL}${noti.userProfileImageUrl}` : null"
@@ -240,10 +251,7 @@ async function deleteAll() {
 
             <div class="noti-body">
               <p class="noti-text">{{ noti.message }}</p>
-              <span
-                v-if="noti.content"
-                class="noti-content"
-              >{{ noti.content }}</span>
+              <span v-if="noti.content" class="noti-content">{{ noti.content }}</span>
             </div>
 
             <template v-if="getType(noti.message) === 'friend'">

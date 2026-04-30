@@ -211,6 +211,12 @@
   object-fit: cover;
   display: block;
   border: 1.5px solid #e2e8f0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.photo-preview:hover {
+  opacity: 0.85;
 }
 
 .photo-remove {

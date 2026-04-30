@@ -13,7 +13,6 @@ const visibleFriends = ref([])
 const isLoadingFriends = ref(false)
 const hasMoreFriends = ref(true)
 const nextCursorName = ref(null)
-const nextCursorId = ref(null)
 
 const friendSearch = ref('')
 const friendSentinelRef = ref(null)
@@ -30,11 +29,8 @@ async function loadMoreFriends() {
   if (isLoadingFriends.value || !hasMoreFriends.value) return
   isLoadingFriends.value = true
   try {
-    const res = await getFriendList(
-      nextCursorName.value ?? undefined,
-      nextCursorId.value ?? undefined,
-    )
-    const { friends, hasNext, nextCursorId: nextId, nextCursorName: nextName } = res.data.data
+    const res = await getFriendList(nextCursorName.value ?? undefined)
+    const { friends, hasNext, nextCursorName: nextName } = res.data.data
     visibleFriends.value.push(
       ...friends.map((f) => ({
         id: f.friendId,
@@ -42,16 +38,12 @@ async function loadMoreFriends() {
         profileImage: f.friendProfileImage ? `${BASE_URL}${f.friendProfileImage}` : null,
       })),
     )
-    if (!hasNext || (nextId != null && nextId === nextCursorId.value)) {
+    if (!hasNext) {
       hasMoreFriends.value = false
       return
     }
-    console.log(nextId)
-    console.log(nextName)
     hasMoreFriends.value = true
-    nextCursorId.value = nextId ?? null
     nextCursorName.value = nextName ?? null
-    console.log()
   } catch (e) {
     console.error('친구 목록 로딩 실패', e)
   } finally {

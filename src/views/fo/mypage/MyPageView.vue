@@ -18,12 +18,22 @@ const profile = ref(null)
 const isLoadingPosts = ref(false)
 const hasNext = ref(true)
 const cursorId = ref(null)
+const cursorValue = ref(null)
+const sortType = ref('CREATED_AT')
 const posts = ref([])
 const isLoadingProfile = ref(false)
 const showDeleteConfirm = ref(false)
 const sidebarKey = ref(0)
 const postsSentinelRef = ref(null)
 let postsObserver = null
+
+const SORT_OPTIONS = [
+  { label: '생성순', value: 'CREATED_AT' },
+  { label: '러닝일자순', value: 'RUN_DATE' },
+  { label: '러닝시간순', value: 'RUN_TIME' },
+  { label: '거리순', value: 'DISTANCE' },
+  { label: '페이스순', value: 'PACE' },
+]
 
 function setupPostsObserver() {
   if (!postsSentinelRef.value) return
@@ -60,13 +70,27 @@ async function saveEdit({ bio, imageFile, imagePreview }) {
     alert(message)
   }
 }
-async function initPage() {
+async function initPage({ resetSort = false } = {}) {
   postsObserver?.disconnect()
   posts.value = []
   hasNext.value = true
   cursorId.value = null
-  profile.value = null
+  cursorValue.value = null
+  sortType.value = resetSort ? 'CREATED_AT' : (route.query.sort || 'CREATED_AT')
   loadProfile()
+  await loadPosts()
+  setupPostsObserver()
+}
+
+async function changeSort(newSort) {
+  if (sortType.value === newSort) return
+  sortType.value = newSort
+  router.replace({ query: { ...route.query, sort: newSort } })
+  postsObserver?.disconnect()
+  posts.value = []
+  hasNext.value = true
+  cursorId.value = null
+  cursorValue.value = null
   await loadPosts()
   setupPostsObserver()
 }
@@ -75,7 +99,7 @@ onMounted(() => initPage())
 
 watch(
   () => route.params.id,
-  () => initPage(),
+  () => initPage({ resetSort: true }),
 )
 
 // ── 마이페이지 정보 ───────────────────────────────────────
@@ -135,8 +159,12 @@ async function loadPosts() {
 
   try {
     const userId = route.params.id || auth.userId
-    const res = await getUserRunningLogs(userId, cursorId.value)
-    const { feeds, hasNext: next, nextCursorId } = res.data.data
+    const res = await getUserRunningLogs(userId, {
+      cursorId: cursorId.value,
+      cursorValue: cursorValue.value,
+      sortType: sortType.value,
+    })
+    const { feeds, hasNext: next, nextCursorId, nextCursorValue } = res.data.data
     if (nextCursorId != null && nextCursorId === cursorId.value) {
       hasNext.value = false
       return
@@ -156,6 +184,7 @@ async function loadPosts() {
     posts.value.push(...normalized)
     hasNext.value = next
     cursorId.value = nextCursorId ?? null
+    cursorValue.value = nextCursorValue ?? null
   } catch (e) {
     console.log('러닝 목록 로딩 실패', e)
   } finally {
@@ -234,10 +263,7 @@ async function confirmDelete() {
       <div class="main-wrap">
         <!-- ── 프로필 헤더 (인스타그램 스타일) ── -->
         <div class="profile-box">
-          <div v-if="isLoadingProfile" class="profile-loading">
-            <span class="profile-spinner" />
-          </div>
-          <div v-else-if="profile" class="profile-header">
+          <div v-if="profile" class="profile-header">
             <!-- 아바타 -->
             <div class="avatar-col">
               <div class="avatar-lg">
@@ -305,25 +331,38 @@ async function confirmDelete() {
           </div>
         </div>
 
-        <!-- ── 러닝일지 작성 버튼 (본인 페이지) ── -->
-        <button
-          v-if="profile?.isOwner"
-          class="mypage-write-btn"
-          @click="router.push('/running/write')"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
+        <!-- ── 툴바: 작성 버튼 + 정렬 버튼 ── -->
+        <div class="post-toolbar">
+          <button
+            v-if="profile?.isOwner"
+            class="mypage-write-btn"
+            @click="router.push('/running/write')"
           >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          러닝일지 작성
-        </button>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            러닝일지 작성
+          </button>
+          <div class="sort-btns">
+            <button
+              v-for="opt in SORT_OPTIONS"
+              :key="opt.value"
+              class="sort-btn"
+              :class="{ active: sortType === opt.value }"
+              @click="changeSort(opt.value)"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
 
         <!-- ── 게시물 그리드 ── -->
         <div v-if="posts.length === 0 && !isLoadingPosts" class="empty-wrap">
@@ -350,7 +389,7 @@ async function confirmDelete() {
               class="grid-item"
               @mouseenter="hoveredId = post.id"
               @mouseleave="hoveredId = null"
-              @click="router.push(`/feed/${post.id}/${post.authorId}`)"
+              @click="router.push(`/feed/${post.id}`)"
             >
               <!-- 사진 or 플레이스홀더 -->
               <img v-if="post.photo" :src="post.photo" alt="러닝 사진" class="grid-img" />
@@ -403,9 +442,7 @@ async function confirmDelete() {
           </div>
         </div>
 
-        <div ref="postsSentinelRef" class="posts-sentinel">
-          <span v-if="isLoadingPosts" class="posts-spinner" />
-        </div>
+        <div ref="postsSentinelRef" class="posts-sentinel" />
       </div>
     </div>
 
