@@ -8,10 +8,12 @@ import { getNicknameStatus } from '@/api/auth.js'
 const router = useRouter()
 const auth = useAuthStore() // const router = useRouter() 아래에 추가
 
+// 이미 로그인된 유저는 즉시 리다이렉트 — 랜딩 페이지가 깜빡이지 않도록 마운트 직후 처리
 onMounted(async () => {
   try {
     const res = await getNicknameStatus()
     auth.hasNickname = res.data.data.hasNickname
+    // 닉네임이 있으면 피드, 없으면 회원가입 플로우로 이동
     router.replace(auth.hasNickname ? '/feed' : '/signup/terms')
   } catch {
     // 미인증 또는 비활성화 계정 → 로그인 페이지 유지
@@ -19,6 +21,7 @@ onMounted(async () => {
   }
 })
 
+// OAuth2 인증을 위해 백엔드 OAuth 엔드포인트로 직접 이동
 function loginWithNaver() {
   window.location.href = 'http://localhost:8081/oauth2/authorization/naver'
 }

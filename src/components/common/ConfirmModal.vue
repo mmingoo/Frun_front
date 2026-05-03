@@ -9,12 +9,13 @@ defineProps({
 
 const emit = defineEmits(['update:show', 'confirm'])
 
+// v-model:show 패턴으로 부모에게 닫기 요청
 function close() {
   emit('update:show', false)
 }
 
 function confirm() {
-  emit('confirm')
+  emit('confirm')          // 부모에서 실제 삭제/확인 로직 실행
   emit('update:show', false)
 }
 </script>

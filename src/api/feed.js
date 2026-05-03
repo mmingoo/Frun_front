@@ -4,9 +4,9 @@ export function reportPost(runningLogId, reportReason) {
   return api.post(`/api/v1/reports/${runningLogId}`, { reportReason })
 }
 
-export function getFeed(cursorId, size = 30) {
+export function getFeed(cursorId, size = 15) {
   return api.get('/api/v1/running-logs/feed', {
-    params: { cursorId: cursorId ?? undefined, size },
+    params: { cursorId: cursorId ?? undefined, size }, // null이면 파라미터 생략 — 첫 페이지 요청
   })
 }
 

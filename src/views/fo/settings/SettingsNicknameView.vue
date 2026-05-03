@@ -16,17 +16,19 @@ const duplicateMessage = ref('')
 const duplicateStatus = ref('')
 const isNicknameLoading = ref(false)
 
-const nicknamePattern = /^[가-힣a-zA-Z0-9]{5,20}$/
+const nicknamePattern = /^[가-힣a-zA-Z0-9]{5,10}$/
 
+// 현재 닉네임과의 동일 여부를 우선 체크 — 변경 없는 저장 시도를 막기 위해
 const nicknameError = computed(() => {
   if (!nickname.value || !hasTouched.value) return ''
   if (nickname.value === auth.nickname) return '현재 닉네임과 동일합니다.'
   if (nickname.value.includes(' ')) return '공백은 사용할 수 없습니다.'
   if (/[ㄱ-ㅎㅏ-ㅣ]/.test(nickname.value)) return '한글 자음/모음만 단독으로 사용할 수 없습니다.'
-  if (!nicknamePattern.test(nickname.value)) return '5~20자, 한글/영문/숫자만 사용 가능합니다.'
+  if (!nicknamePattern.test(nickname.value)) return '5~10자, 한글/영문/숫자만 사용 가능합니다.'
   return ''
 })
 
+// 형식 유효 + 현재 닉네임과 다름 + 중복 확인 통과를 모두 만족해야 저장 가능
 const canSaveNickname = computed(() => {
   return (
     hasTouched.value &&
@@ -38,6 +40,7 @@ const canSaveNickname = computed(() => {
   )
 })
 
+// 닉네임 변경 시 중복 확인 초기화 — 이전 확인 결과가 새 입력에 적용되지 않도록
 function onNicknameInput() {
   hasTouched.value = true
   isDuplicateChecked.value = false
@@ -52,9 +55,11 @@ async function checkDuplicate() {
     const res = await checkNickname(nickname.value)
     const exists = res.data.data.exists
     if (exists) {
+      // 중복 있음 — 제출 불가 상태
       duplicateStatus.value = 'error'
       duplicateMessage.value = res.data.message
     } else {
+      // 중복 없음 — 제출 가능 상태
       duplicateStatus.value = 'ok'
       duplicateMessage.value = res.data.message
       isDuplicateChecked.value = true
@@ -69,7 +74,7 @@ async function handleSaveNickname() {
   isNicknameLoading.value = true
   try {
     await updateNickname(nickname.value)
-    auth.setNickname(nickname.value)
+    auth.setNickname(nickname.value) // 스토어에도 반영해 NavBar 등 다른 컴포넌트에 즉시 적용
     alert('닉네임이 변경되었습니다.')
     router.back()
   } catch (e) {
@@ -104,14 +109,14 @@ async function handleSaveNickname() {
         </div>
 
         <section class="settings-card">
-          <p class="card-desc">5~20자, 한글/영문/숫자 사용 가능</p>
+          <p class="card-desc">5~10자, 한글/영문/숫자 사용 가능</p>
 
           <div class="input-row">
             <input
               v-model="nickname"
               type="text"
               placeholder="닉네임을 입력하세요"
-              maxlength="20"
+              maxlength="10"
               class="nickname-input"
               :class="{ 'input-error': nicknameError }"
               @input="onNicknameInput"
@@ -133,7 +138,7 @@ async function handleSaveNickname() {
           >
             {{ duplicateMessage }}
           </p>
-          <p v-else-if="nickname" class="msg msg-hint">{{ nickname.length }}/20</p>
+          <p v-else-if="nickname" class="msg msg-hint">{{ nickname.length }}/10</p>
 
           <button
             class="btn-save"

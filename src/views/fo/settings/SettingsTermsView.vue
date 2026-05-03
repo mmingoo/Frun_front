@@ -16,10 +16,12 @@ const loadError = ref('')
 
 onMounted(async () => {
   try {
+    // 약관 목록과 내 동의 현황을 병렬로 조회해 로딩 시간 단축
     const [termsRes, myRes] = await Promise.all([getTermsList(), getMyTerms()])
     terms.value = termsRes.data.data
     const myAgreements = myRes.data
 
+    // 약관 ID별로 내 동의 여부를 매핑 — 서버 응답에 없는 약관은 false로 초기화
     terms.value.forEach((t) => {
       const my = myAgreements.find((a) => a.title === t.title)
       agreed.value[t.termId] = my ? my.isAgreed : false
@@ -36,7 +38,7 @@ async function handleSave() {
   try {
     const agreements = terms.value.map((t) => ({
       termId: t.termId,
-      agreed: t.required ? true : agreed.value[t.termId],
+      agreed: t.required ? true : agreed.value[t.termId], // 필수 약관은 체크박스 상태와 무관하게 강제 동의
     }))
     await updateTermsAgreement(agreements)
     alert('약관 동의가 저장되었습니다.')
@@ -49,6 +51,7 @@ async function handleSave() {
   }
 }
 
+// 약관 본문 줄바꿈 문자를 HTML로 변환 (v-html 렌더링용)
 function formatContent(content) {
   return content.replace(/\n/g, '<br />')
 }

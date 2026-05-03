@@ -15,10 +15,11 @@ const hasSearched = ref(false)
 let debounceTimer = null
 let abortController = null
 
+// 500ms 디바운스 — 입력마다 API를 호출하지 않도록 타이머 초기화 후 재설정
 function scheduleSearch(val) {
   clearTimeout(debounceTimer)
   if (!val.trim()) {
-    abortController?.abort()
+    abortController?.abort() // 진행 중인 요청 취소
     searchResults.value = []
     hasSearched.value = false
     return
@@ -32,6 +33,7 @@ function onInput(e) {
   scheduleSearch(e.target.value)
 }
 
+// 이전 요청을 abort 후 새 컨트롤러 생성 — 키입력이 빠를 때 이전 응답이 늦게 오면 결과가 덮어씌워지는 문제 방지
 async function doSearch(keyword) {
   keyword = (keyword ?? searchInput.value).trim()
   if (!keyword) return
@@ -57,6 +59,7 @@ async function doSearch(keyword) {
   }
 }
 
+// API 성공 후 로컬 상태를 'SENDED'로 즉시 업데이트 — 버튼이 "친구요청 중"으로 바뀜
 async function handleAddFriend(user) {
   try {
     await requestFriend(user.id)
@@ -90,6 +93,7 @@ async function handleRejectFriend(user) {
   }
 }
 
+// confirm으로 한번 더 확인 후 삭제 — 실수 방지
 async function handleDeleteFriend(user) {
   if (!confirm(`'${user.nickname}'님을 친구 목록에서 삭제하시겠습니까?`)) return
   try {

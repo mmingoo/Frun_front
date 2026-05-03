@@ -11,15 +11,19 @@ defineProps({
 const emit = defineEmits(['like', 'report', 'detail', 'edit', 'delete'])
 const router = useRouter()
 
+// 포스트 ID별 이미지 슬라이더 현재 인덱스 관리 (v-for에서 여러 카드가 동시에 렌더링되므로 Map 구조)
 const imageIndexMap = ref({})
 
+// 해당 포스트의 현재 이미지 인덱스 반환 (초기값 0)
 function getIndex(postId) {
   return imageIndexMap.value[postId] ?? 0
 }
+// 이전 이미지로 이동 — 첫 번째 이미지에서는 동작하지 않음
 function prev(postId) {
   const cur = getIndex(postId)
   if (cur > 0) imageIndexMap.value[postId] = cur - 1
 }
+// 다음 이미지로 이동 — 마지막 이미지에서는 동작하지 않음
 function next(postId, length) {
   const cur = getIndex(postId)
   if (cur < length - 1) imageIndexMap.value[postId] = cur + 1

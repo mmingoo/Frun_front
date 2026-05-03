@@ -35,6 +35,7 @@ const SORT_OPTIONS = [
   { label: '페이스순', value: 'PACE' },
 ]
 
+// sentinel 요소가 뷰포트에 진입하면 러닝 목록을 추가 로드하는 옵저버 등록
 function setupPostsObserver() {
   if (!postsSentinelRef.value) return
   postsObserver?.disconnect()
@@ -51,18 +52,20 @@ onBeforeUnmount(() => {
   postsObserver?.disconnect()
 })
 
+// profile이 아직 로드되지 않은 경우 기본값 반환 — 로딩 중 화면 깜빡임 방지
 const stats = computed(() => ({
   totalDistance: profile.value?.totalDistance ?? 0,
   totalCount: profile.value?.totalCount ?? 0,
   avgPace: profile.value?.avgPace ?? '-',
 }))
 
+// 프로필 편집 저장 — API 성공 후에만 화면에 반영해 실패 시 이전 상태 유지
 async function saveEdit({ bio, imageFile, imagePreview }) {
   try {
-    await updatUserProfile(bio, imageFile) // API 호출
+    await updatUserProfile(bio, imageFile)
 
     // API 성공 후 화면 반영
-    if (imageFile) profile.value.profileImage = imagePreview
+    if (imageFile) profile.value.profileImage = imagePreview // 로컬 미리보기를 화면에 적용
     profile.value.bio = bio
     alert('프로필을 변경하였습니다.')
   } catch (e) {
@@ -70,6 +73,7 @@ async function saveEdit({ bio, imageFile, imagePreview }) {
     alert(message)
   }
 }
+// 페이지 진입·재진입 시 모든 상태 초기화 후 재로드 — route.params.id 변경 시에도 호출
 async function initPage({ resetSort = false } = {}) {
   postsObserver?.disconnect()
   posts.value = []
@@ -82,10 +86,11 @@ async function initPage({ resetSort = false } = {}) {
   setupPostsObserver()
 }
 
+// 정렬 변경 시 cursor 초기화 후 첫 페이지부터 재로드 — 이전 정렬의 cursor를 그대로 쓰면 잘못된 위치에서 시작
 async function changeSort(newSort) {
   if (sortType.value === newSort) return
   sortType.value = newSort
-  router.replace({ query: { ...route.query, sort: newSort } })
+  router.replace({ query: { ...route.query, sort: newSort } }) // URL에 정렬 상태 반영 (새로고침 시 유지)
   postsObserver?.disconnect()
   posts.value = []
   hasNext.value = true
@@ -103,6 +108,7 @@ watch(
 )
 
 // ── 마이페이지 정보 ───────────────────────────────────────
+// HH:mm:ss → 총 분 변환 — 그리드 카드에 분 단위로 표시
 function parseDurationMin(duration) {
   if (!duration) return 0
   const [h, m] = duration.split(':').map(Number)
@@ -165,6 +171,7 @@ async function loadPosts() {
       sortType: sortType.value,
     })
     const { feeds, hasNext: next, nextCursorId, nextCursorValue } = res.data.data
+    // 커서가 변하지 않으면 무한 루프 방지 — 마지막 페이지에서 동일 커서가 반환되는 서버 동작 대응
     if (nextCursorId != null && nextCursorId === cursorId.value) {
       hasNext.value = false
       return
@@ -218,8 +225,8 @@ async function handleAcceptFriend() {
   try {
     await acceptFriend(profile.value.id)
     profile.value.friendStatus = 'FRIEND'
-    profile.value.friendCount++
-    sidebarKey.value++
+    profile.value.friendCount++ // 로컬 친구 수 즉시 반영
+    sidebarKey.value++ // key 변경으로 FriendSidebar를 강제 재마운트해 목록 갱신
     alert('친구 요청을 수락하였습니다.')
   } catch (e) {
     const message = e.response?.data?.message
@@ -238,13 +245,14 @@ async function handleRejectFriend() {
   }
 }
 
+// 친구 삭제 확인 후 실행 — 삭제 성공 시 사이드바 강제 갱신
 async function confirmDelete() {
   showDeleteConfirm.value = false
   try {
     await deleteFriend(profile.value.id)
     profile.value.friendStatus = 'NONE'
-    profile.value.friendCount--
-    sidebarKey.value++
+    profile.value.friendCount-- // 로컬 친구 수 즉시 반영
+    sidebarKey.value++ // key 변경으로 FriendSidebar를 강제 재마운트해 목록 갱신
     alert('친구를 삭제하였습니다.')
   } catch (e) {
     const message = e.response?.data?.message

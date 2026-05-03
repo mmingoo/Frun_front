@@ -15,17 +15,18 @@ const editProfileImagePreview = ref(null)
 const imageError = ref('')
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png']
-const MAX_SIZE = 3 * 1024 * 1024 // 3MB
+const MAX_SIZE = 10 * 1024 * 1024 // 10MB
 
 const canSave = computed(() => !imageError.value)
 
+// 모달이 열릴 때마다 부모 props 값으로 편집 상태 초기화
 watch(
   () => props.modelValue,
   (open) => {
     if (open) {
       editBio.value = props.bio
-      editProfileImageFile.value = null
-      editProfileImagePreview.value = props.profileImage
+      editProfileImageFile.value = null                    // 새 파일 선택 초기화
+      editProfileImagePreview.value = props.profileImage   // 기존 이미지 미리보기 유지
       imageError.value = ''
     }
   },
@@ -35,23 +36,26 @@ function onProfileImageChange(e) {
   const file = e.target.files[0]
   if (!file) return
 
+  // 허용되지 않는 파일 형식 — input을 초기화해 같은 파일 재선택 가능하게 함
   if (!ALLOWED_TYPES.includes(file.type)) {
     imageError.value = 'jpg, jpeg, png 형식의 파일만 업로드할 수 있습니다.'
     e.target.value = ''
     return
   }
   if (file.size > MAX_SIZE) {
-    alert('파일 크기는 최대 3MB입니다.')
+    alert('파일 크기는 최대 10MB입니다.')
     e.target.value = ''
     return
   }
 
   imageError.value = ''
   editProfileImageFile.value = file
+  // createObjectURL로 로컬 미리보기 생성 — 서버 업로드 전이므로 BASE_URL 불필요
   editProfileImagePreview.value = URL.createObjectURL(file)
 }
 
 function save() {
+  // 저장 이벤트에 bio(trim), imageFile, imagePreview 전달 후 모달 닫기
   emit('save', {
     bio: editBio.value.trim(),
     imageFile: editProfileImageFile.value,

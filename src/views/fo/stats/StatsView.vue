@@ -30,6 +30,7 @@ const periodTo = ref(todayStr)
 const appliedFrom = ref(thisMonthFirst)
 const appliedTo = ref(todayStr)
 
+// 날짜를 [MIN_DATE, 오늘] 범위로 제한 — 범위 밖의 값은 양 끝값으로 대체
 function clampDate(v) {
   if (!v || v < MIN_DATE) return MIN_DATE
   if (v > todayStr) return todayStr
@@ -47,6 +48,7 @@ const DAY_OF_WEEK_MAP = {
   SUN: '일',
 }
 
+// 초 단위 페이스를 "M'SS"" 형태로 변환
 function formatPace(avgPaceSec) {
   if (!avgPaceSec) return '-'
   const m = Math.floor(avgPaceSec / 60)
@@ -54,6 +56,7 @@ function formatPace(avgPaceSec) {
   return `${m}'${s}"`
 }
 
+// 초 단위 총 시간을 "X시간 Y분" 형태로 변환 — 1시간 미만이면 시간 생략
 function formatDuration(totalDurationSec) {
   if (!totalDurationSec) return '-'
   const h = Math.floor(totalDurationSec / 3600)
@@ -61,6 +64,7 @@ function formatDuration(totalDurationSec) {
   return h > 0 ? `${h}시간 ${m}분` : `${m}분`
 }
 
+// 서버 응답 summary를 화면 표시용 구조로 변환
 function formatSummary(summary) {
   return {
     totalDistance: summary.totalDistanceKm,
@@ -105,7 +109,7 @@ async function fetchWeekly() {
 
     weekStats.value = formatSummary(summary)
 
-    // chart: [{ dayOfWeek, distanceKm }] → [{ label, distance }]
+    // chart: [{ dayOfWeek, distanceKm }] → [{ label(한글 요일), distance }]
     weeklyChartData.value = chart.map((d) => ({
       label: DAY_OF_WEEK_MAP[d.dayOfWeek],
       distance: d.distanceKm,
@@ -129,9 +133,9 @@ async function fetchMonthly() {
 
     monthStats.value = formatSummary(summary)
 
-    // 이번 달 1일이 속한 주의 월요일 계산 (백엔드와 동일한 로직)
+    // 이번 달 1일이 속한 주의 월요일 계산 (백엔드와 동일한 로직) — 일요일 기준이 아닌 월요일 기준 주 계산
     const monthFirstDay = new Date(today.getFullYear(), today.getMonth(), 1)
-    const daysToMonday = (monthFirstDay.getDay() + 6) % 7
+    const daysToMonday = (monthFirstDay.getDay() + 6) % 7 // JS getDay(): 0=일 → 월요일까지 거슬러 올라가는 일수
     const firstWeekMonday = new Date(monthFirstDay)
     firstWeekMonday.setDate(monthFirstDay.getDate() - daysToMonday)
 
@@ -170,8 +174,8 @@ async function fetchPeriod() {
 
     periodStatsData.value = formatSummary(summary)
 
-    // chart: [{ date, dayOfWeek, distanceKm }]
-    // → [{ date, label: 'M/D', day: '월', distance }]
+    // chart: [{ date, dayOfWeek, distanceKm }] → [{ date, label: 'M/D', day: '월', distance }]
+    // 날짜를 'M/D' 형태로 변환해 차트 라벨로 표시 (앞의 0 제거)
     periodChartData.value = chart.map((d) => {
       const [, m, day] = d.date.split('-')
       return {
@@ -189,12 +193,14 @@ async function fetchPeriod() {
   }
 }
 
+// 현재 탭에 맞는 통계 API 호출
 function fetchStats() {
   if (activeTab.value === 'week') fetchWeekly()
   else if (activeTab.value === 'month') fetchMonthly()
   else fetchPeriod()
 }
 
+// 기간 조회 전 날짜 유효성 검증 — 잘못된 입력을 자동으로 유효 범위로 보정
 function searchPeriod() {
   // 1. 시작일(from) 검증: 오늘보다 미래 날짜면 MIN_DATE('2026-02-01')로 설정
   let from = periodFrom.value
@@ -204,11 +210,11 @@ function searchPeriod() {
     from = clampDate(from)
   }
 
-  // 2. 종료일(to) 검증: 기존 로직 유지 (비어있거나 범위를 벗어나면 오늘로)
+  // 2. 종료일(to) 검증: 비어있거나 범위를 벗어나면 오늘로
   const rawTo = periodTo.value
   const to = !rawTo || rawTo <= MIN_DATE || rawTo >= todayStr ? todayStr : rawTo
 
-  // 3. 상태 업데이트 및 API 호출
+  // 3. 보정된 값으로 상태 업데이트 후 API 호출
   periodFrom.value = from
   periodTo.value = to
   appliedFrom.value = from
@@ -257,17 +263,20 @@ const chartTitle = computed(() => {
 const selectedFriendId = ref(null) // null = 내 통계, 숫자 = 친구 통계
 const targetUserId = computed(() => selectedFriendId.value ?? authStore.userId)
 
+// 친구를 선택하면 해당 친구 기준으로 통계 재조회
 function selectFriend(friend) {
   selectedFriendId.value = friend.userId
-  fetchStats() // 선택된 친구 기준으로 다시 조회
+  fetchStats()
 }
 
+// 내 통계로 돌아가기
 function resetToMyStats() {
   selectedFriendId.value = null
   fetchStats()
 }
 
 // ── 친구 목록 로드 ────────────────────────────────────────
+// cursor 기반 페이지네이션을 루프로 모두 로드 — 친구 패널에 전체 목록이 필요하므로
 async function fetchFriendList() {
   let cursorName = null
   const all = []
@@ -291,6 +300,7 @@ async function fetchFriendList() {
 // ── 친구 기록 ─────────────────────────────────────────────
 const friendSearchQuery = ref('')
 
+// 검색어가 있으면 닉네임으로 클라이언트 필터링 (전체 목록이 메모리에 있으므로 API 불필요)
 const filteredFriendRecords = computed(() => {
   if (!friendSearchQuery.value.trim()) return friendRecords.value
   return friendRecords.value.filter((f) =>
@@ -301,6 +311,7 @@ const filteredFriendRecords = computed(() => {
 const visibleCount = ref(6)
 const visibleFriends = computed(() => filteredFriendRecords.value.slice(0, visibleCount.value))
 
+// 검색어 변경 시 표시 개수를 초기화 — 필터링된 결과의 첫 6개를 보여주도록
 watch(friendSearchQuery, () => {
   visibleCount.value = 6
 })
@@ -313,14 +324,15 @@ watch(sentinel, (el) => {
 })
 
 onMounted(async () => {
-  // userId가 없으면 먼저 채우기
   if (!authStore.userId) {
+    // targetUserId computed가 의존하므로 통계 조회 전에 먼저 채우기
     const res = await getMyInfo()
     authStore.setUserId(res.data.data.userId)
   }
   fetchFriendList()
   fetchStats()
 
+  // 친구 패널 하단 sentinel을 감지해 visibleCount를 5씩 증가시키는 가상 무한 스크롤
   observer = new IntersectionObserver((entries) => {
     if (entries[0].isIntersecting && visibleCount.value < filteredFriendRecords.value.length) {
       visibleCount.value = Math.min(visibleCount.value + 5, filteredFriendRecords.value.length)

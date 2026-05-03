@@ -12,13 +12,14 @@ const auth = useAuthStore()
 const showDeactivateConfirm = ref(false)
 const isDeactivating = ref(false)
 
+// 비활성화 순서: 계정 비활성화 → 백엔드 세션 종료 → 클라이언트 상태 초기화
 async function handleDeactivate() {
   showDeactivateConfirm.value = false
   isDeactivating.value = true
   try {
     await deactivateAccount()
-    await logoutApi()
-    auth.logout()
+    await logoutApi() // 백엔드 refreshToken 쿠키 무효화
+    auth.logout() // 클라이언트 accessToken 및 스토어 초기화
     alert('계정을 비활성화하였습니다.')
     router.replace('/')
   } catch (e) {

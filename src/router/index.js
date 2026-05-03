@@ -129,12 +129,13 @@ const router = createRouter({
 
 // 모든 페이지 이동 전에 실행
 router.beforeEach(async (to) => {
-  // /inactive 는 가드 없이 통과
+  // /inactive 는 가드 없이 통과 — 비활성화 계정 복구 플로우
   if (to.path === '/inactive') return true
 
   // 비활성화 계정으로 강제 로그아웃된 경우 → API 호출 없이 랜딩 페이지 표시
   if (sessionStorage.getItem('_accountInactive')) {
     sessionStorage.removeItem('_accountInactive')
+    // 이미 랜딩이면 그대로, 아니면 리다이렉트
     return to.path === '/' ? true : '/'
   }
 
@@ -149,6 +150,7 @@ router.beforeEach(async (to) => {
     const auth = useAuthStore()
     if (auth.hasNickname === null) {
       try {
+        // 로그인 여부 확인 — 실패 시 미로그인으로 간주
         const res = await api.get('/api/v1/users/me/nickname-status')
         auth.hasNickname = res.data.data.hasNickname
       } catch {
@@ -159,7 +161,7 @@ router.beforeEach(async (to) => {
     return true
   }
 
-  //store 에서 hasNickname 확인
+  // store에서 hasNickname 확인
   const auth = useAuthStore()
 
   // 아직 모르는 상태면 닉네임이 있는지 없는지 여부를 반환하는 api 실행
@@ -168,6 +170,7 @@ router.beforeEach(async (to) => {
       const res = await api.get('/api/v1/users/me/nickname-status')
       auth.hasNickname = res.data.data.hasNickname
     } catch {
+      // 인증 실패 — 로그인 화면으로 리다이렉트
       alert('로그인 후 이용해주세요.')
       return '/'
     }

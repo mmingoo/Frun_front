@@ -1,6 +1,6 @@
 import api from './index.js'
 
-export function getNotifications(cursorId, size = 15) {
+export function getNotifications(cursorId, size = 30) {
   return api.get('/api/v1/notification', {
     params: { cursorId: cursorId ?? undefined, size },
   })
@@ -8,7 +8,7 @@ export function getNotifications(cursorId, size = 15) {
 
 export function deleteSelectedNotifications(selectedNotificationIds) {
   return api.delete('/api/v1/notification/selected-notification', {
-    data: { selectedNotificationIds },
+    data: { selectedNotificationIds }, // axios DELETE는 body를 data 옵션으로 전달
   })
 }
 

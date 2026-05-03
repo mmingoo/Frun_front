@@ -9,14 +9,15 @@ const emit = defineEmits(['update:show', 'submit'])
 
 const reportReason = ref('')
 
+// v-model:show 패턴으로 부모에게 닫기 요청
 function close() {
   emit('update:show', false)
 }
 
 function submit() {
-  if (!reportReason.value.trim()) return
+  if (!reportReason.value.trim()) return  // 공백만 있는 경우 제출 차단
   emit('submit', { reason: reportReason.value })
-  reportReason.value = ''
+  reportReason.value = ''  // 제출 후 입력창 초기화
 }
 </script>
 

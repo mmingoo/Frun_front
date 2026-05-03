@@ -29,6 +29,7 @@ const auth = useAuthStore()
 
 // ── API 호출 ───────────────────────────────────────────────
 onMounted(async () => {
+  // 댓글 작성자 정보 표시에 필요 — userId/nickname/profileImage 모두 없을 때만 API 호출
   if (!auth.userId || !auth.nickname) {
     const res = await getMyInfo()
     auth.setUserId(res.data.data.userId)
@@ -50,9 +51,9 @@ onMounted(async () => {
       authorId: d.userId,
       nickname: d.nickName,
       profileImage: d.imageUrl ? `${BASE_URL}${d.imageUrl}` : null,
-      createdAt: d.createdAt?.slice(0, 16).replace('T', ' ') ?? '',
+      createdAt: d.createdAt?.slice(0, 16).replace('T', ' ') ?? '', // ISO 형식에서 초·밀리초 제거
       runDate: d.runDate,
-      runTime: d.runTime ? d.runTime.slice(0, 5) : null,
+      runTime: d.runTime ? d.runTime.slice(0, 5) : null, // HH:mm:ss → HH:mm
       logImages: (d.logImages ?? []).map((img) => `${BASE_URL}${img}`),
       distance: d.distance,
       duration: d.duration, // "HH:mm:ss" 형태
@@ -80,6 +81,7 @@ onMounted(async () => {
 
   await loadMoreComments()
 
+  // 알림에서 특정 댓글 링크로 진입한 경우 해당 댓글로 스크롤
   const targetCommentId = route.query.commentId ? Number(route.query.commentId) : null
   if (targetCommentId) {
     await scrollToTargetComment(targetCommentId)
@@ -88,6 +90,7 @@ onMounted(async () => {
 })
 
 // ── duration 포맷 ("HH:mm:ss" → "X시간 Xm Xs") ─────────────
+// h=0이면 시간 생략, m=0이면 분도 생략해 최소 단위만 표시
 function formatDuration(duration) {
   if (!duration) return '-'
   const [h, m, s] = duration.split(':').map(Number)
@@ -124,6 +127,7 @@ function closeLightbox() {
 const isOwner = computed(() => post.value?.authorId === auth.userId)
 
 // ── 좋아요 ────────────────────────────────────────────────
+// Optimistic UI — API 호출 전에 화면을 먼저 업데이트해 응답 지연에도 즉각적으로 반응
 async function toggleLike() {
   if (!post.value) return
   if (post.value.liked) {
@@ -165,6 +169,7 @@ const isLoadingComments = ref(false)
 const commentSentinelRef = ref(null)
 let commentObserver = null
 
+// cursor 기반 댓글 무한 스크롤 — sentinel이 뷰포트에 진입할 때마다 호출
 async function loadMoreComments() {
   if (isLoadingComments.value || !hasNextComment.value || !post.value) return
   isLoadingComments.value = true
@@ -196,6 +201,7 @@ async function loadMoreComments() {
   }
 }
 
+// sentinel 요소가 뷰포트에 진입하면 추가 댓글을 로드하는 옵저버 등록
 function setupCommentObserver() {
   if (!commentSentinelRef.value) return
   commentObserver?.disconnect()
@@ -279,7 +285,7 @@ async function confirmDeleteComment() {
       const idx = comments.value.findIndex((c) => c.id === target.commentId)
       if (idx !== -1) {
         if (deleteType === 'CASCADE') {
-          // 댓글 + 모든 답글 완전 제거, 서버 응답의 deletedReplyCount 사용
+          // 답글이 있는 경우 댓글 + 모든 답글 완전 제거 — 서버 응답의 deletedReplyCount만큼 카운트 차감
           const removedCount = 1 + deletedReplyCount
           comments.value.splice(idx, 1)
           totalCommentCount.value = Math.max(0, totalCommentCount.value - removedCount)
@@ -353,11 +359,12 @@ async function toggleReplyInput(comment) {
   }
 }
 
-// 답글 목록 펼치기 (첫 로드 + 무한 스크롤)
+// 답글 목록 펼치기 (첫 로드 + 토글)
+// 이미 로드된 경우 API 재호출 없이 showReplies만 토글
 async function loadReplies(comment) {
   if (comment.repliesLoaded) {
     comment.showReplies = !comment.showReplies
-    if (!comment.showReplies) comment.showReplyInput = false
+    if (!comment.showReplies) comment.showReplyInput = false // 답글 숨길 때 입력창도 닫기
     return
   }
   try {
@@ -489,6 +496,7 @@ const { showReportModal, openReport, submitReport } = useReport()
 // ── 알림에서 특정 댓글로 이동 ─────────────────────────────
 const highlightedCommentId = ref(null)
 
+// 댓글 → 답글 순으로 2단계 탐색 후 해당 요소로 스크롤, 3초 후 하이라이트 해제
 async function scrollToTargetComment(targetId) {
   // 1단계: 최상위 댓글 전체 페이지 로드 후 탐색
   while (!comments.value.find((c) => c.id === targetId) && hasNextComment.value) {

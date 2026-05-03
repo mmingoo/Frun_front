@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import NavBar from '@/components/layout/NavBar.vue'
 import { getNoticeDetail } from '@/api/notice.js'
+import { BASE_URL } from '@/api/index.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -38,22 +39,29 @@ function noticeTypeLabel(type) {
   return NOTICE_TYPE_LABEL[type] ?? type
 }
 
-const IMAGE_URL_RE = /(https?:\/\/\S+\.(?:png|jpe?g|gif|webp|svg)(?:\?\S*)?)/gi
+// API가 imageUrls 배열로 이미지를 별도 반환 — 상대 경로에 BASE_URL 붙여 완성
+const noticeImages = computed(() =>
+  (notice.value?.imageUrls ?? []).map((url) => `${BASE_URL}${url}`),
+)
 
-const renderedContent = computed(() => {
-  if (!notice.value?.content) return ''
-  return notice.value.content.replace(
-    IMAGE_URL_RE,
-    (url) => `<img src="${url}" alt="공지 이미지" class="notice-img" />`,
-  )
-})
+const renderedContent = computed(() => notice.value?.content ?? '')
 
+// ── 이미지 슬라이더 ───────────────────────────────────────
+const currentImageIndex = ref(0)
+
+function prevImage() {
+  if (currentImageIndex.value > 0) currentImageIndex.value--
+}
+
+function nextImage() {
+  if (currentImageIndex.value < noticeImages.value.length - 1) currentImageIndex.value++
+}
+
+// ── 이미지 라이트박스 ─────────────────────────────────────
 const lightboxSrc = ref(null)
 
-function onBodyClick(e) {
-  if (e.target.classList.contains('notice-img')) {
-    lightboxSrc.value = e.target.src
-  }
+function openLightbox() {
+  lightboxSrc.value = noticeImages.value[currentImageIndex.value]
 }
 
 function closeLightbox() {
@@ -118,7 +126,38 @@ function closeLightbox() {
           <hr class="divider" />
         </header>
 
-        <div class="notice-body" v-html="renderedContent" @click="onBodyClick" />
+        <!-- 이미지 슬라이더 -->
+        <div v-if="noticeImages.length > 0" class="photo-container">
+          <div class="photo-inner" @click="openLightbox">
+            <img :src="noticeImages[currentImageIndex]" alt="공지 이미지" />
+            <div v-if="noticeImages.length > 1" class="img-dots">
+              <span
+                v-for="(_, i) in noticeImages"
+                :key="i"
+                class="img-dot"
+                :class="{ active: i === currentImageIndex }"
+              />
+            </div>
+          </div>
+          <template v-if="noticeImages.length > 1">
+            <button
+              v-if="currentImageIndex > 0"
+              class="img-arrow img-arrow-left"
+              @click="prevImage"
+            >
+              ‹
+            </button>
+            <button
+              v-if="currentImageIndex < noticeImages.length - 1"
+              class="img-arrow img-arrow-right"
+              @click="nextImage"
+            >
+              ›
+            </button>
+          </template>
+        </div>
+
+        <div class="notice-body" v-html="renderedContent" />
       </article>
     </div>
   </div>

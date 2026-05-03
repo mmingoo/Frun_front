@@ -16,6 +16,7 @@ onMounted(async () => {
   try {
     const res = await getTermsList()
     terms.value = res.data.data
+    // 각 약관의 동의 상태와 내용 펼침 상태를 termId를 키로 초기화
     terms.value.forEach((t) => {
       agreed.value[t.termId] = false
       openStates.value[t.termId] = false
@@ -25,12 +26,15 @@ onMounted(async () => {
   }
 })
 
+// 모든 약관에 동의했는지 확인
 const agreeAll = computed(() => terms.value.every((t) => agreed.value[t.termId]))
 
+// 필수 약관만 모두 동의했는지 확인 — 다음 버튼 활성화 조건
 const canNext = computed(() =>
   terms.value.filter((t) => t.required).every((t) => agreed.value[t.termId]),
 )
 
+// 현재 전체 동의 상태의 반대값으로 모든 약관을 일괄 토글
 function toggleAll() {
   const next = !agreeAll.value
   terms.value.forEach((t) => {
@@ -41,11 +45,13 @@ function toggleAll() {
 function handleNext() {
   if (!canNext.value) return
   const marketingTerm = terms.value.find((t) => !t.required)
+  // 마케팅 동의 여부를 스토어에 저장 — SetNickname에서 agreeTerms API 호출 시 사용
   auth.termsAgreed = true
   auth.marketingAgreed = marketingTerm ? agreed.value[marketingTerm.termId] : false
   router.push('/signup/nickname')
 }
 
+// 약관 본문 줄바꿈 문자를 HTML로 변환 (v-html 렌더링용)
 function formatContent(content) {
   return content.replace(/\n/g, '<br />')
 }

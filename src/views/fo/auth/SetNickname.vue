@@ -21,15 +21,17 @@ const duplicateStatus = ref('') // 'ok' | 'error' | ''
 const isLoading = ref(false)
 let _savedCheckState = null // captured on file input click, before the nickname watcher runs
 
-const nicknamePattern = /^[가-힣a-zA-Z0-9]{5,20}$/
+const nicknamePattern = /^[가-힣a-zA-Z0-9]{5,10}$/
 
+// 닉네임 형식 유효성 검사 — 공백 우선 체크 후 패턴 검사
 const nicknameError = computed(() => {
   if (!nickname.value) return ''
   if (nickname.value.includes(' ')) return '공백은 사용할 수 없습니다.'
-  if (!nicknamePattern.test(nickname.value)) return '5~20자, 한글/영문/숫자만 사용 가능합니다.'
+  if (!nicknamePattern.test(nickname.value)) return '5~10자, 한글/영문/숫자만 사용 가능합니다.'
   return ''
 })
 
+// 형식 유효 + 중복 확인 통과 + 5자 이상을 모두 만족해야 제출 가능
 const canSubmit = computed(() => {
   return (
     !nicknameError.value &&
@@ -39,6 +41,7 @@ const canSubmit = computed(() => {
   )
 })
 
+// 닉네임 변경 시 중복 확인 초기화 — 이전 확인 결과가 새 입력에 적용되지 않도록
 watch(nickname, () => {
   isDuplicateChecked.value = false
   duplicateMessage.value = ''
@@ -64,8 +67,8 @@ function onProfileChange(e) {
     alert('jpg, jpeg, png 파일만 업로드 가능합니다.')
     return
   }
-  if (file.size > 3 * 1024 * 1024) {
-    alert('파일 크기는 최대 3MB입니다.')
+  if (file.size > 10 * 1024 * 1024) {
+    alert('파일 크기는 최대 10MB입니다.')
     return
   }
   profileImage.value = file
@@ -87,9 +90,11 @@ async function checkDuplicate() {
     const res = await checkNickname(nickname.value)
     const exists = res.data.data.exists
     if (exists) {
+      // 중복 있음 — 제출 불가 상태
       duplicateStatus.value = 'error'
       duplicateMessage.value = res.data.message
     } else {
+      // 중복 없음 — 제출 가능 상태
       duplicateStatus.value = 'ok'
       duplicateMessage.value = res.data.message
       isDuplicateChecked.value = true
@@ -103,6 +108,7 @@ async function handleSubmit() {
   if (!canSubmit.value) return
   isLoading.value = true
   try {
+    // TermsView에서 저장한 마케팅 동의 여부를 포함해 약관 API 호출
     await agreeTerms([
       { termsId: TERMS_SERVICE_ID, isAgreed: true },
       { termsId: TERMS_PRIVACY_ID, isAgreed: true },
@@ -110,7 +116,7 @@ async function handleSubmit() {
     ])
     await setNickname(nickname.value, profileImage.value)
     auth.hasNickname = true
-    sessionStorage.removeItem('_inSignupFlow')
+    sessionStorage.removeItem('_inSignupFlow')  // 가입 진행 중 플래그 제거
     router.push('/feed')
   } catch {
     alert('닉네임 저장에 실패했습니다. 다시 시도해주세요.')
@@ -136,7 +142,7 @@ async function handleCancel() {
   <div class="container">
     <h1 class="title">닉네임을 설정해주세요</h1>
     <p class="subtitle" style="margin-bottom: 4px">jpg, jpeg, png 형식, 최대 3MB</p>
-    <p class="subtitle">5~20자, 한글/영문/숫자 사용 가능</p>
+    <p class="subtitle">5~10자, 한글/영문/숫자 사용 가능</p>
 
     <!-- 프로필 사진 -->
     <div class="profile-section">
@@ -183,7 +189,7 @@ async function handleCancel() {
           v-model="nickname"
           type="text"
           placeholder="닉네임 입력"
-          maxlength="20"
+          maxlength="10"
           class="nickname-input"
           :class="{ 'input-error': nicknameError }"
         />
@@ -205,7 +211,7 @@ async function handleCancel() {
       >
         {{ duplicateMessage }}
       </p>
-      <p v-else class="msg msg-hint">{{ nickname.length }}/20</p>
+      <p v-else class="msg msg-hint">{{ nickname.length }}/10</p>
     </div>
 
     <!-- 시작하기 버튼 -->

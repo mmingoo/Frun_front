@@ -36,7 +36,7 @@ const pace = computed(() => {
   const dist = parseFloat(distance.value)
   const mins = parseInt(durationMin.value) || 0
   const secs = parseInt(durationSec.value) || 0
-  const totalMin = mins + secs / 60
+  const totalMin = mins + secs / 60 // 총 시간(분)
   if (!dist || dist <= 0 || !totalMin) return ''
   const paceMin = Math.floor(totalMin / dist)
   const paceSec = Math.round((totalMin / dist - paceMin) * 60)
@@ -62,18 +62,18 @@ function openPhotoInput() {
 function onPhotoChange(e) {
   const files = Array.from(e.target.files)
   for (const file of files) {
-    if (totalPhotoCount.value >= 5) break
+    if (totalPhotoCount.value >= 5) break // 중간에 5장이 차면 나머지 무시
     if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
       alert('jpg, jpeg, png 파일만 업로드 가능합니다.')
       continue
     }
-    if (file.size > 3 * 1024 * 1024) {
-      alert('파일 크기는 최대 3MB입니다.')
+    if (file.size > 10 * 1024 * 1024) {
+      alert('파일 크기는 최대 10MB입니다.')
       continue
     }
     newPhotos.value.push({ file, preview: URL.createObjectURL(file) })
   }
-  e.target.value = ''
+  e.target.value = '' // 같은 파일 재선택 가능하도록 input 초기화
 }
 
 // 기존에 존재하는 이미지 제거 함수
@@ -83,7 +83,7 @@ function removeExistingPhoto(index) {
 
 // 업로드된 이미지 제거 함수
 function removeNewPhoto(index) {
-  URL.revokeObjectURL(newPhotos.value[index].preview)
+  URL.revokeObjectURL(newPhotos.value[index].preview) // Object URL은 명시적으로 해제하지 않으면 메모리에서 해제되지 않음
   newPhotos.value.splice(index, 1)
 }
 
@@ -93,24 +93,24 @@ const isPublic = ref(true)
 
 // 입력 필터링
 function onDistanceInput(e) {
-  let val = e.target.value.replace(/[^0-9.]/g, '')
+  let val = e.target.value.replace(/[^0-9.]/g, '') // 숫자와 점만 허용
   const dotIndex = val.indexOf('.')
   if (dotIndex !== -1) {
-    val = val.slice(0, dotIndex + 1) + val.slice(dotIndex + 1).replace(/\./g, '')
-    if (val.length > dotIndex + 3) val = val.slice(0, dotIndex + 3)
+    val = val.slice(0, dotIndex + 1) + val.slice(dotIndex + 1).replace(/\./g, '') // 점이 여러 개면 첫 번째만 남기고
+    if (val.length > dotIndex + 3) val = val.slice(0, dotIndex + 3) // 소수점 이하 최대 2자리로 제한
   }
   e.target.value = val
   distance.value = val
 }
 
 function onDurationMinInput(e) {
-  const val = e.target.value.replace(/[^0-9]/g, '')
+  const val = e.target.value.replace(/[^0-9]/g, '') // 숫자만 허용
   e.target.value = val
   durationMin.value = val
 }
 
 function onDurationSecInput(e) {
-  const val = e.target.value.replace(/[^0-9]/g, '')
+  const val = e.target.value.replace(/[^0-9]/g, '') // 숫자만 허용
   e.target.value = val
   durationSec.value = val
 }
@@ -126,7 +126,7 @@ const distanceError = computed(() => {
   return ''
 })
 
-const MIN_DATE = '2026-02-01'
+const MIN_DATE = '2026-02-01' // 서비스 오픈일 이전 날짜 방지
 
 const dateTimeError = computed(() => {
   if (runDate.value < MIN_DATE) {
@@ -136,21 +136,23 @@ const dateTimeError = computed(() => {
     return '러닝 날짜는 오늘 날짜를 초과할 수 없습니다.'
   }
   if (runDate.value === defaultDate && runTime.value > defaultTime) {
+    // 오늘 날짜 선택 시 미래 시각 방지
     return '현재 시각보다 이후 시간은 입력할 수 없습니다.'
   }
   return ''
 })
 
 const durationError = computed(() => {
-  if (!durationMin.value && durationSec.value === '') return ''
+  if (!durationMin.value && durationSec.value === '') return '' // 둘 다 비어있으면 에러 없음 (canSubmit에서 필수 체크)
   const mins = parseInt(durationMin.value) || 0
   const secs = durationSec.value === '' ? null : parseInt(durationSec.value)
   if (mins > 600) return '러닝 시간은 최대 600분까지 입력 가능합니다.'
-  if (secs === null) return '초를 입력해주세요.'
+  if (secs === null) return '초를 입력해주세요.' // 분만 입력하고 초를 빈 값으로 남긴 경우
   if (secs < 0 || secs >= 60) return '초는 0~59 사이로 입력해주세요.'
   return ''
 })
 
+// 날짜·거리·러닝시간 모두 유효해야 제출 가능
 const canSubmit = computed(() => {
   return (
     !dateTimeError.value &&
@@ -166,6 +168,7 @@ onMounted(async () => {
   const { runningLogId, authorId } = route.params
 
   if (!auth.userId) {
+    // 스토어에 userId가 없으면 API로 조회
     const res = await getMyInfo()
     auth.setUserId(res.data.data.userId)
   }
@@ -175,6 +178,7 @@ onMounted(async () => {
     const d = res.data.data
 
     if (d.userId !== auth.userId) {
+      // 작성자가 아닌 경우 클라이언트에서 접근 차단 (서버도 403을 반환하지만 UX 개선용)
       alert('러닝일지를 수정할 권한이 없습니다.')
       router.replace('/feed')
       return
@@ -193,14 +197,14 @@ onMounted(async () => {
       const h = parts[0] ?? 0
       const m = parts[1] ?? 0
       const s = parts[2] ?? 0
-      durationMin.value = String(h * 60 + m)
+      durationMin.value = String(h * 60 + m) // HH:mm:ss → 분으로 변환 (시간 × 60 + 분)
       durationSec.value = String(s)
     }
 
     // 기존 이미지
     existingPhotos.value = (d.logImages ?? []).map((img) => ({
       url: img, // 서버에 keepImages로 전달할 경로
-      preview: img.startsWith('http') ? img : `${BASE_URL}${img}`,
+      preview: img.startsWith('http') ? img : `${BASE_URL}${img}`, // 절대 URL이면 그대로, 상대 경로면 BASE_URL 붙이기
     }))
     // 메모
     memo.value = d.memo ?? ''
@@ -244,8 +248,8 @@ async function handleSubmit() {
       durationSec: parseInt(durationSec.value) || 0,
       memo: memo.value,
       isPublic: isPublic.value,
-      keepImageUrls: existingPhotos.value.map((p) => p.url),
-      newPhotos: newPhotos.value,
+      keepImageUrls: existingPhotos.value.map((p) => p.url), // 기존 이미지 중 유지할 URL 목록 — 서버가 이 외의 기존 이미지를 삭제
+      newPhotos: newPhotos.value, // 새로 추가한 이미지 파일 목록
     })
     alert('러닝일지를 수정하였습니다.')
     router.back()
@@ -266,6 +270,7 @@ function handleCancel() {
 // 사진 라이트박스
 const lightboxSrc = ref(null)
 
+// 클릭한 사진을 라이트박스로 표시
 function viewPhoto(src) {
   lightboxSrc.value = src
 }
@@ -275,7 +280,7 @@ function closeLightbox() {
 }
 
 function onKeydown(e) {
-  if (e.key === 'Escape') closeLightbox()
+  if (e.key === 'Escape') closeLightbox() // ESC 키로 라이트박스 닫기
 }
 </script>
 

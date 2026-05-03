@@ -17,6 +17,7 @@ const nextCursorName = ref(null)
 const friendSearch = ref('')
 const friendSentinelRef = ref(null)
 
+// 검색어가 있으면 닉네임으로 클라이언트 필터링, 없으면 전체 반환
 const filteredFriends = computed(() =>
   friendSearch.value.trim()
     ? visibleFriends.value.filter((f) => f.nickname.includes(friendSearch.value.trim()))
@@ -25,12 +26,14 @@ const filteredFriends = computed(() =>
 
 let friendObserver = null
 
+// 커서 기반으로 친구 목록을 추가 로드 — 중복 호출 방지 후 응답을 누적
 async function loadMoreFriends() {
   if (isLoadingFriends.value || !hasMoreFriends.value) return
   isLoadingFriends.value = true
   try {
     const res = await getFriendList(nextCursorName.value ?? undefined)
     const { friends, hasNext, nextCursorName: nextName } = res.data.data
+    // 친구 필드를 컴포넌트 규격으로 정규화하며 추가
     visibleFriends.value.push(
       ...friends.map((f) => ({
         id: f.friendId,
@@ -43,7 +46,7 @@ async function loadMoreFriends() {
       return
     }
     hasMoreFriends.value = true
-    nextCursorName.value = nextName ?? null
+    nextCursorName.value = nextName ?? null  // 다음 요청에 사용할 커서 갱신
   } catch (e) {
     console.error('친구 목록 로딩 실패', e)
   } finally {
@@ -51,6 +54,7 @@ async function loadMoreFriends() {
   }
 }
 
+// sentinel 요소가 뷰포트에 진입하면 추가 친구 목록을 로드하는 옵저버 등록
 function setupObserver() {
   if (!friendSentinelRef.value) return
   friendObserver?.disconnect()
@@ -65,17 +69,19 @@ function setupObserver() {
 
 const pendingDeleteFriend = ref(null)
 
+// 삭제 확인 모달에 표시할 대상 친구를 임시 저장
 function confirmDelete(friend) {
   pendingDeleteFriend.value = friend
 }
 
 async function executeDelete() {
   const friend = pendingDeleteFriend.value
-  pendingDeleteFriend.value = null
+  pendingDeleteFriend.value = null  // 모달 먼저 닫기
   try {
     await deleteFriend(friend.id)
+    // API 성공 후 로컬 목록에서도 즉시 제거
     visibleFriends.value = visibleFriends.value.filter((f) => f.id !== friend.id)
-    emit('friend-deleted')
+    emit('friend-deleted')  // 부모(MyPageView)에 친구 목록 변경 알림
     alert('친구를 삭제하였습니다.')
   } catch (e) {
     const message = e.response?.data?.message

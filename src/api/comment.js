@@ -11,15 +11,15 @@ export function saveReply(content, runningLogId, parentId) {
 }
 
 //댓글 조회
-export function getComment(runningLogId, cursorId) {
+export function getComment(runningLogId, cursorId, size = 30) {
   return api.get(`/api/v1/running-logs/${runningLogId}/comments`, {
-    params: cursorId ? { cursorId } : {},
+    params: cursorId ? { cursorId, size } : { size },
   })
 }
 
-export function getReply(runningLogId, parentId, cursorId) {
+export function getReply(runningLogId, parentId, cursorId, size = 30) {
   return api.get(`/api/v1/running-logs/reply/${parentId}`, {
-    params: cursorId ? { cursorId } : {},
+    params: cursorId ? { cursorId, size } : { size },
   })
 }
 

@@ -21,12 +21,14 @@ const sentinel = ref(null)
 const selectedIds = ref([])
 
 const unread = computed(() => notifications.value.filter((n) => !n.read).length)
+// 모든 알림이 선택된 경우에만 true — 빈 목록은 false
 const isAllSelected = computed(
   () =>
     notifications.value.length > 0 &&
     notifications.value.every((n) => selectedIds.value.includes(n.notificationId)),
 )
 
+// 서버에서 별도 type 필드 없이 메시지 내용으로 유형을 추론
 function getType(message) {
   if (message.includes('좋아요')) return 'like'
   if (message.includes('댓글')) return 'comment'
@@ -34,6 +36,7 @@ function getType(message) {
   return 'like'
 }
 
+// 신고 처리 및 관리자 조치 알림 — 클릭 시 게시글 이동 없이 그대로 표시
 function isReport(noti) {
   if (
     noti.type === 'REPORT_ACCEPTED' ||
@@ -49,6 +52,7 @@ function isRestore(noti) {
   return noti.type === 'RESTORE_RUNNING_LOG'
 }
 
+// cursor 기반 알림 무한 스크롤 — sentinel이 뷰포트에 진입할 때마다 호출
 async function loadMore() {
   if (loading.value || !hasNext.value) return
   loading.value = true
@@ -57,6 +61,7 @@ async function loadMore() {
     const { notificationDtoList, nextCursorId, hasNext: more } = res.data.data
     notifications.value.push(...notificationDtoList)
     if (nextCursorId === cursorId.value) {
+      // 커서가 변하지 않으면 무한 루프 방지
       hasNext.value = false
       return
     }
@@ -86,11 +91,13 @@ onBeforeUnmount(() => {
   observer?.disconnect()
 })
 
+// 친구·신고 알림은 게시글이 없으므로 클릭해도 이동하지 않음
 function handleClick(noti) {
   const type = getType(noti.message)
   if (type === 'friend') return
   if (isReport(noti)) return
   noti.read = true
+  // commentId가 있으면 해당 댓글로 바로 스크롤하도록 쿼리스트링 포함
   if (noti.commentId) {
     router.push(`/feed/${noti.runningLogId}?commentId=${noti.commentId}`)
   } else {
@@ -98,6 +105,7 @@ function handleClick(noti) {
   }
 }
 
+// 서버 API 없이 클라이언트 상태만 업데이트 — 다음 방문 시 서버에서 다시 미읽음 여부를 받으므로 충분
 function markAllRead() {
   notifications.value.forEach((n) => (n.read = true))
 }
@@ -122,6 +130,7 @@ async function handleReject(noti) {
   }
 }
 
+// 이미 선택된 경우 해제, 아닌 경우 추가 — Set 대신 배열로 관리해 템플릿에서 includes()로 확인
 function toggleSelect(id) {
   const idx = selectedIds.value.indexOf(id)
   if (idx === -1) selectedIds.value.push(id)
@@ -130,12 +139,13 @@ function toggleSelect(id) {
 
 function toggleSelectAll() {
   if (isAllSelected.value) {
-    selectedIds.value = []
+    selectedIds.value = [] // 모두 선택 상태면 전체 해제
   } else {
-    selectedIds.value = notifications.value.map((n) => n.notificationId)
+    selectedIds.value = notifications.value.map((n) => n.notificationId) // 전체 선택
   }
 }
 
+// API 성공 후 로컬 목록에서도 즉시 제거 — 재조회 없이 UI 반영
 async function deleteSelected() {
   if (selectedIds.value.length === 0) return
   if (!confirm('알림을 삭제하시겠습니까?')) return
@@ -155,7 +165,7 @@ async function deleteAll() {
   if (!confirm('모든 알림을 삭제하시겠습니까?')) return
   try {
     const res = await deleteAllNotifications()
-    notifications.value = []
+    notifications.value = [] // 로컬 목록 전체 비우기
     selectedIds.value = []
     alert(res.data.message)
   } catch (e) {

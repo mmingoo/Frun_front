@@ -13,6 +13,7 @@ const hasNext = ref(false)
 const isLoading = ref(true)
 const errorMsg = ref('')
 
+// 페이지 번호 기반 공지사항 목록 조회 (cursor 방식이 아닌 offset 방식)
 async function fetchNotices(page) {
   isLoading.value = true
   errorMsg.value = ''
@@ -30,12 +31,14 @@ async function fetchNotices(page) {
   }
 }
 
+// 유효 범위 확인 후 페이지 이동 + 스크롤 상단 복귀
 function goToPage(page) {
   if (page < 0 || page >= totalPages.value) return
   fetchNotices(page)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+// ISO 날짜 문자열에서 연-월-일만 추출
 function formatDate(dateStr) {
   if (!dateStr) return ''
   return dateStr.slice(0, 10)
@@ -45,6 +48,7 @@ const NOTICE_TYPE_LABEL = {
   SERVICE: '서비스',
   COMPETITION: '대회',
 }
+// 서버 enum → 한글 표시명 변환 (정의되지 않은 타입은 그대로 표시)
 function noticeTypeLabel(type) {
   return NOTICE_TYPE_LABEL[type] ?? type
 }

@@ -11,10 +11,12 @@ const route = useRoute()
 const auth = useAuthStore()
 const userId = ref({})
 
+// 마운트 시 프로필 이미지와 알림 카운트를 로드
 onMounted(async () => {
   const res = await getMyProfile()
   const d = res.data.data
   userId.value = d.userId
+  // 이미 profileImage가 세팅된 경우 덮어쓰지 않음 (다른 컴포넌트에서 먼저 세팅한 경우)
   if (!auth.profileImage) {
     try {
       auth.setProfileImage(d.profileImageUrl ? `${BASE_URL}${d.profileImageUrl}` : null)
@@ -22,6 +24,7 @@ onMounted(async () => {
       // 프로필 로딩 실패 시 무시
     }
   }
+  // 네브바 알림 뱃지 초기값 세팅
   auth.setNotificationCnt(d.notificationCnt)
 })
 
@@ -29,7 +32,7 @@ async function handleLogout() {
   try {
     await logoutApi()
   } catch {
-    // 백엔드 실패해도 로컬 정리는 진행
+    // 백엔드 실패해도 클라이언트 상태는 반드시 초기화
   }
   auth.logout()
   alert('로그아웃 하였습니다.')

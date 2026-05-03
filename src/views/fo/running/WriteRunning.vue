@@ -16,7 +16,7 @@ const defaultTime = `${padTwo(now.getHours())}:${padTwo(now.getMinutes())}`
 const runDate = ref(defaultDate)
 const runTime = ref(defaultTime)
 
-// 날짜는 오늘까지, 시간은 오늘 선택 시 현재 시각까지
+// 오늘 날짜 선택 시에만 현재 시각으로 시간 상한을 제한 — 미래 시간 입력 방지
 const maxTime = computed(() => (runDate.value === defaultDate ? defaultTime : undefined))
 
 // 거리 / 러닝시간
@@ -24,12 +24,12 @@ const distance = ref('')
 const durationMin = ref('')
 const durationSec = ref('')
 
-// 페이스 자동 계산
+// 거리와 시간으로 페이스(분/km) 자동 계산
 const pace = computed(() => {
   const dist = parseFloat(distance.value)
   const mins = parseInt(durationMin.value) || 0
   const secs = parseInt(durationSec.value) || 0
-  const totalMin = mins + secs / 60
+  const totalMin = mins + secs / 60  // 총 시간(분)
   if (!dist || dist <= 0 || !totalMin) return ''
   const paceMin = Math.floor(totalMin / dist)
   const paceSec = Math.round((totalMin / dist - paceMin) * 60)
@@ -40,6 +40,7 @@ const pace = computed(() => {
 const photos = ref([])
 const photoInputRef = ref(null)
 
+// 5장 제한에 걸리면 input을 열지 않음
 function openPhotoInput() {
   if (photos.value.length >= 5) return
   photoInputRef.value?.click()
@@ -48,21 +49,22 @@ function openPhotoInput() {
 function onPhotoChange(e) {
   const files = Array.from(e.target.files)
   for (const file of files) {
-    if (photos.value.length >= 5) break
+    if (photos.value.length >= 5) break  // 중간에 5장이 차면 나머지 무시
     if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
       alert('jpg, jpeg, png 파일만 업로드 가능합니다.')
       continue
     }
-    if (file.size > 3 * 1024 * 1024) {
-      alert('파일 크기는 최대 3MB입니다.')
+    if (file.size > 10 * 1024 * 1024) {
+      alert('파일 크기는 최대 10MB입니다.')
       continue
     }
     photos.value.push({ file, preview: URL.createObjectURL(file) })
   }
-  e.target.value = ''
+  e.target.value = ''  // 같은 파일 재선택 가능하도록 input 초기화
 }
 
 function removePhoto(index) {
+  // Object URL은 명시적으로 해제하지 않으면 메모리에서 해제되지 않음
   URL.revokeObjectURL(photos.value[index].preview)
   photos.value.splice(index, 1)
 }
@@ -75,9 +77,10 @@ const isPublic = ref(true)
 
 // 입력 필터링
 function onDistanceInput(e) {
-  let val = e.target.value.replace(/[^0-9.]/g, '')
+  let val = e.target.value.replace(/[^0-9.]/g, '')  // 숫자와 점만 허용
   const dotIndex = val.indexOf('.')
   if (dotIndex !== -1) {
+    // 점이 여러 개면 첫 번째만 남기고 소수점 이하 최대 2자리로 제한
     val = val.slice(0, dotIndex + 1) + val.slice(dotIndex + 1).replace(/\./g, '')
     if (val.length > dotIndex + 3) val = val.slice(0, dotIndex + 3)
   }
@@ -86,13 +89,13 @@ function onDistanceInput(e) {
 }
 
 function onDurationMinInput(e) {
-  const val = e.target.value.replace(/[^0-9]/g, '')
+  const val = e.target.value.replace(/[^0-9]/g, '')  // 숫자만 허용
   e.target.value = val
   durationMin.value = val
 }
 
 function onDurationSecInput(e) {
-  const val = e.target.value.replace(/[^0-9]/g, '')
+  const val = e.target.value.replace(/[^0-9]/g, '')  // 숫자만 허용
   e.target.value = val
   durationSec.value = val
 }
@@ -107,7 +110,7 @@ const distanceError = computed(() => {
   return ''
 })
 
-const MIN_DATE = '2026-02-01'
+const MIN_DATE = '2026-02-01'  // 서비스 오픈일 이전 날짜 방지
 
 const dateTimeError = computed(() => {
   if (runDate.value < MIN_DATE) {
@@ -116,6 +119,7 @@ const dateTimeError = computed(() => {
   if (runDate.value > defaultDate) {
     return '러닝 날짜는 오늘 날짜를 초과할 수 없습니다.'
   }
+  // 오늘 날짜 선택 시 미래 시각 방지
   if (runDate.value === defaultDate && runTime.value > defaultTime) {
     return '현재 시각보다 이후 시간은 입력할 수 없습니다.'
   }
@@ -123,15 +127,17 @@ const dateTimeError = computed(() => {
 })
 
 const durationError = computed(() => {
+  // 둘 다 비어있으면 에러 없음 (canSubmit에서 필수 체크)
   if (!durationMin.value && durationSec.value === '') return ''
   const mins = parseInt(durationMin.value) || 0
   const secs = durationSec.value === '' ? null : parseInt(durationSec.value)
   if (mins > 600) return '러닝 시간은 최대 600분까지 입력 가능합니다.'
-  if (secs === null) return '초를 입력해주세요.'
+  if (secs === null) return '초를 입력해주세요.'  // 분만 입력하고 초를 빈 값으로 남긴 경우
   if (secs < 0 || secs >= 60) return '초는 0~59 사이로 입력해주세요.'
   return ''
 })
 
+// 날짜·거리·러닝시간 모두 유효해야 제출 가능
 const canSubmit = computed(() => {
   return (
     !dateTimeError.value &&
@@ -173,6 +179,7 @@ function handleCancel() {
 // 사진 라이트박스
 const lightboxSrc = ref(null)
 
+// 클릭한 사진을 라이트박스로 표시
 function viewPhoto(src) {
   lightboxSrc.value = src
 }
@@ -181,10 +188,12 @@ function closeLightbox() {
   lightboxSrc.value = null
 }
 
+// ESC 키로 라이트박스 닫기
 function onKeydown(e) {
   if (e.key === 'Escape') closeLightbox()
 }
 
+// 전역 keydown 이벤트 등록 및 해제
 onMounted(() => window.addEventListener('keydown', onKeydown))
 onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>

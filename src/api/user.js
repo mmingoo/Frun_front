@@ -36,14 +36,14 @@ export function getInactiveTempToken(code) {
   })
 }
 
-// 임시 토큰을 직접 헤더에 담아 전송 (인터셉터 우회)
+// 임시 토큰을 직접 헤더에 담아 전송 (인터셉터 우회 — 스토어에 accessToken 없는 상태이므로)
 export function activateAccount(tempToken) {
   return axios.patch(
     `${BASE_URL}/api/v1/users/activate`,
     {},
     {
       headers: { Authorization: `Bearer ${tempToken}` },
-      withCredentials: true, // refreshToken 쿠키 수신
+      withCredentials: true, // 활성화 성공 시 백엔드가 refreshToken 쿠키를 Set-Cookie로 발급
     },
   )
 }

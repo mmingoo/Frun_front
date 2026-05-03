@@ -1,15 +1,15 @@
 import api from './index'
 
-export function getFriendList(cursorname, size = 10) {
+export function getFriendList(cursorname, size = 100) {
   return api.get('/api/v1/friend/friend-list', {
-    params: { cursorName: cursorname ?? undefined, size },
+    params: { cursorName: cursorname ?? undefined, size }, // null이면 파라미터 생략 — 첫 페이지 요청
   })
 }
 
-export function searchFriend(keyword, cursorname, size, signal) {
+export function searchFriend(keyword, cursorname, size = 30, signal) {
   return api.get('/api/v1/friend/search', {
     params: { keyword, cursorName: cursorname ?? undefined, size },
-    signal,
+    signal, // AbortController 신호 — 이전 검색 요청 취소용
   })
 }
 
